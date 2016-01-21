@@ -12,6 +12,18 @@
 
 /* ----- Definitions ----- */
 #define RAM_END_ADDR 0x10008000
+#define BLOCK_SIZE 128
+
+typedef struct MemQueue MemQueue;
+struct MemQueue {
+		MemBlock* head;
+		MemBlock* tail;
+}
+
+typedef struct MemBlock Memblock;
+struct MemBlock {
+		MemBlock* next;
+};
 
 /* ----- Variables ----- */
 /* This symbol is defined in the scatter file (see RVCT Linker User Guide) */  

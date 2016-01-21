@@ -22,7 +22,7 @@ U32 *gp_stack; /* The last allocated stack low address. 8 bytes aligned */
 0x10008000+---------------------------+ High Address
           |    Proc 1 STACK           |
           |---------------------------|
-          |    Proc 2 STACK           |
+          |    Proc 2 STACK                                 |
           |---------------------------|<--- gp_stack
           |                           |
           |        HEAP               |
@@ -72,8 +72,18 @@ void memory_init(void)
 		--gp_stack; 
 	}
   
-	/* allocate memory for heap, not implemented yet*/
-  
+	Queue q;
+	q.head = $Image + offset;
+	
+	U32 block_head;
+	for (block_head = (U32) q.head; block_head + BLOCK_SIZE < gp_stack; block_head += BLOCK_SIZE) {
+			MemBlock* memBlock = (MemBlock*) block_head;
+			memBlock->next = block_head + BLOCK_SIZE;
+	}
+	MemBlock* lastBlock = (MemBlock*) (block_head - BLOCK_SIZE);
+	lastBlock->next = NULL;
+	
+	q.tail = lastBlock;
 }
 
 /**
