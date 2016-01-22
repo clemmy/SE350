@@ -25,6 +25,9 @@ struct MemBlock {
 		MemBlock* next;
 };
 
+/* ----- Globals ----- */
+MemQueue memQueue;
+
 /* ----- Variables ----- */
 /* This symbol is defined in the scatter file (see RVCT Linker User Guide) */  
 extern unsigned int Image$$RW_IRAM1$$ZI$$Limit; 

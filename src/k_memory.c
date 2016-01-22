@@ -71,19 +71,18 @@ void memory_init(void)
 	if ((U32)gp_stack & 0x04) { /* 8 bytes alignment */
 		--gp_stack; 
 	}
-  
-	Queue q;
-	q.head = $Image + offset;
+
+	memQueue.head = $Image + offset;
 	
 	U32 block_head;
-	for (block_head = (U32) q.head; block_head + BLOCK_SIZE < gp_stack; block_head += BLOCK_SIZE) {
+	for (block_head = (U32) memQueue.head; block_head + BLOCK_SIZE < gp_stack; block_head += BLOCK_SIZE) {
 			MemBlock* memBlock = (MemBlock*) block_head;
 			memBlock->next = block_head + BLOCK_SIZE;
 	}
 	MemBlock* lastBlock = (MemBlock*) (block_head - BLOCK_SIZE);
 	lastBlock->next = NULL;
 	
-	q.tail = lastBlock;
+	memQueue.tail = lastBlock;
 }
 
 /**
@@ -112,7 +111,18 @@ void *k_request_memory_block(void) {
 #ifdef DEBUG_0 
 	printf("k_request_memory_block: entering...\n");
 #endif /* ! DEBUG_0 */
-	return (void *) NULL;
+	MemBlock* prevHead = memQueue.head;
+	
+	if (memQueue.head == NULL) {
+		prevHead = NULL;
+	} else if (memQueue.head == memQueue.tail) {
+		memQueue.tail = NULL;
+		memQueue.head = NULL;
+	} else {
+		memQueue.head = memQueue.head->next;
+	}
+	
+	return (void *) prevHead; // NULL if there is no memory left
 }
 
 int k_release_memory_block(void *p_mem_blk) {
