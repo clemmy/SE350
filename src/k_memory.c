@@ -129,5 +129,17 @@ int k_release_memory_block(void *p_mem_blk) {
 #ifdef DEBUG_0 
 	printf("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
 #endif /* ! DEBUG_0 */
+	
+	MemBlock * newTail = (MemBlock *) p_mem_blk;
+	newTail->next = NULL;
+	
+	if (memQueue.tail != NULL) {
+		memQueue.tail->next = newTail;	
+		memQueue.tail = newTail;
+	} else {
+		memQueue.head = newTail;
+		memQueue.tail = newTail;
+	}
+	
 	return RTX_OK;
 }
