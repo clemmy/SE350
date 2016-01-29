@@ -39,6 +39,8 @@ void proc1(void)
 	int i = 0;
 	int ret_val = 10;
 	int x = 0;
+	
+	k_request_memory_block();
 
 	while ( 1) {
 		if ( i != 0 && i%5 == 0 ) {
