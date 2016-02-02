@@ -40,7 +40,27 @@ void proc1(void)
 	int ret_val = 10;
 	int x = 0;
 	
-	k_request_memory_block();
+	
+	int j;
+	void* curBlock;
+	
+	//void* blocks[249];
+	
+	for (j = 0; ; j++) {
+		curBlock = k_request_memory_block();
+		if (curBlock == NULL) {
+			break;
+		}
+// 		else if ((unsigned int)curBlock >= 0x10007000) {
+// 			1+1;
+// 		}
+		
+		//printf("%x\n", &blocks[j]);
+		//blocks[j] = curBlock;
+	}
+		
+	
+	curBlock = k_request_memory_block();
 
 	while ( 1) {
 		if ( i != 0 && i%5 == 0 ) {

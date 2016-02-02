@@ -15,7 +15,9 @@
 U32 *gp_stack; /* The last allocated stack low address. 8 bytes aligned */
                /* The first stack starts at the RAM high address */
 	       /* stack grows down. Fully decremental stack */
+U8 *p_end;
 MemQueue memQueue;
+unsigned int numOfBlocks;
 
 
 /**
@@ -48,11 +50,8 @@ MemQueue memQueue;
 
 void memory_init(void)
 {
-	U8 *p_end = (U8 *)&Image$$RW_IRAM1$$ZI$$Limit;
 	int i;
-	U32 block_head;
-	MemBlock* memBlock;
-	MemBlock* lastBlock;
+	p_end = (U8 *)&Image$$RW_IRAM1$$ZI$$Limit;
   
 	/* 4 bytes padding */
 	p_end += 4;
@@ -76,12 +75,19 @@ void memory_init(void)
 	if ((U32)gp_stack & 0x04) { /* 8 bytes alignment */
 		--gp_stack; 
 	}
+}
 
-	memQueue.head = (MemBlock*) Image$$RW_IRAM1$$ZI$$Limit + 0x100;
+void heap_init() {
+	U32 block_head;
+	MemBlock* memBlock;
+	MemBlock* lastBlock;
 	
+	memQueue.head = (MemBlock*) p_end;
+	numOfBlocks = 0;
 	for (block_head = (U32) memQueue.head; block_head + BLOCK_SIZE < (U32) gp_stack; block_head += BLOCK_SIZE) {
 			memBlock = (MemBlock*) block_head;
 			memBlock->next = (MemBlock*) (block_head + BLOCK_SIZE);
+			numOfBlocks++;
 	}
 	lastBlock = (MemBlock*) (block_head - BLOCK_SIZE);
 	lastBlock->next = NULL;
@@ -114,6 +120,7 @@ U32 *alloc_stack(U32 size_b)
 void *k_request_memory_block(void) {
 	MemBlock* prevHead;
 	
+	
 #ifdef DEBUG_0 
 	printf("k_request_memory_block: entering...\n");
 #endif /* ! DEBUG_0 */
@@ -124,9 +131,11 @@ void *k_request_memory_block(void) {
 	} else if (memQueue.head == memQueue.tail) {
 		memQueue.tail = NULL;
 		memQueue.head = NULL;
-	} else {
+	} 
+	else {
 		memQueue.head = memQueue.head->next;
 	}
+	
 	
 	return (void *) prevHead; // NULL if there is no memory left
 }
