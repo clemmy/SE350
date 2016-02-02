@@ -41,26 +41,34 @@ void proc1(void)
 	int x = 0;
 	
 	
-	int j;
-	void* curBlock;
-	
 	//void* blocks[249];
 	
-	for (j = 0; ; j++) {
-		curBlock = k_request_memory_block();
-		if (curBlock == NULL) {
-			break;
-		}
+// 	for (j = 0; ; j++) {
+// 		curBlock = k_request_memory_block();
+// 		if (curBlock == NULL) {
+// 			break;
+// 		}
 // 		else if ((unsigned int)curBlock >= 0x10007000) {
 // 			1+1;
 // 		}
 		
 		//printf("%x\n", &blocks[j]);
 		//blocks[j] = curBlock;
+	//}
+	
+	int j;
+	void* curBlock;
+	void* blocks[3];
+	
+	for (j=0;j<3;j++) {
+		blocks[j] = k_request_memory_block();
+	}
+	
+	for (j=2;j>=0;j--) {
+		k_release_memory_block(blocks[j]);
 	}
 		
-	
-	curBlock = k_request_memory_block();
+	// curBlock = k_request_memory_block();
 
 	while ( 1) {
 		if ( i != 0 && i%5 == 0 ) {
