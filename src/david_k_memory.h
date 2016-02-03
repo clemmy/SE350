@@ -12,14 +12,25 @@
 
 /* ----- Definitions ----- */
 #define RAM_END_ADDR 0x10008000
+#define BLOCK_SIZE 128
+
+typedef struct MemBlock MemBlock;
+struct MemBlock {
+		MemBlock* next;
+};
+
+typedef struct MemQueue MemQueue;
+struct MemQueue {
+		MemBlock* head;
+		MemBlock* tail;
+};
 
 /* ----- Variables ----- */
 /* This symbol is defined in the scatter file (see RVCT Linker User Guide) */  
 extern unsigned int Image$$RW_IRAM1$$ZI$$Limit; 
 extern PCB **gp_pcbs;
-extern PCB ***PQueueFirst;
-extern PCB ***PQueueLast;
 extern PROC_INIT g_proc_table[NUM_TEST_PROCS];
+extern MemQueue memQueue;
 
 /* ----- Functions ------ */
 void memory_init(void);
