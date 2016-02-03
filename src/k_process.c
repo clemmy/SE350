@@ -25,6 +25,10 @@
 /* ----- Global Variables ----- */
 PCB **gp_pcbs;                  /* array of pcbs */
 PCB *gp_current_process = NULL; /* always point to the current RUN process */
+PCB ***PQueueFirst;
+PCB ***PQueueLast;
+/* PCB **BlockedQueueFirst;
+PCB **BlockedQueueLast; */
 
 U32 g_switch_flag = 0;          /* whether to continue to run the process before the UART receive interrupt */
                                 /* 1 means to switch to another process, 0 means to continue the current process */
@@ -38,15 +42,86 @@ extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
  * @biref: initialize all processes in the system
  * NOTE: We assume there are only two user processes in the system in this example.
  */
+ 
+/*void blockedEnqueue(PCB* thePCB)
+{
+	
+	if (BlockedQueueFirst == NULL){
+		BlockedQueueFirst = thePCB;
+		BlockedQueueLast = thePCB;
+		return;
+	}
+	
+	BlockedQueueLast->nextPCB = thePCB;
+	BlockedQueueLast = thePCB;
+}
+
+PCB* blockedDequeue()
+{
+	int i;
+	PCB* returnPCB;
+	
+	if (BlockedQueueFirst != NULL){
+		returnPCB = BlockedQueueFirst;
+		BlockedQueueFirst = BlockedQueueFirst->nextPCB;
+		returnPCB->nextPCB = NULL;
+		if (BlockedQueueFirst == NULL){
+			BlockedQueueLast = NULL;
+		}
+		return returnPCB;
+	}
+	return NULL;
+} */
+ 
+void processEnqueue(PCB* thePCB)
+{
+	int priority = thePCB->m_priority; //priority is 0, 1, 2 or 3
+	PCB** pqf = (PCB**)(PQueueFirst);
+	PCB** pql = (PCB**)(PQueueLast);
+	
+	if (pqf[priority] == NULL){
+		pqf[priority] = thePCB;
+		pql[priority] = thePCB;
+		return;
+	}
+	
+	pql[priority]->nextPCB = thePCB;
+	pql[priority] = thePCB;
+}
+
+PCB* processDequeue()
+{
+	PCB** pqf = (PCB**)(PQueueFirst);
+	PCB** pql = (PCB**)(PQueueLast);
+	int i;
+	PCB* returnPCB;
+	
+	for (i = 0; i < 4; i++){
+		if (pqf[i] != NULL){
+			returnPCB = pqf[i];
+			pqf[i] = pqf[i]->nextPCB;
+			returnPCB->nextPCB = NULL;
+			if (pqf[i] == NULL){
+				pql[i] = NULL;
+			}
+			return returnPCB;
+		}
+	}
+	return NULL;
+}
+ 
 void process_init() 
 {
 	int i;
 	U32 *sp;
+	PCB** pqf = (PCB**)(*PQueueFirst);
+	PCB** pql = (PCB**)(*PQueueLast);
   
         /* fill out the initialization table */
 	set_test_procs();
 	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		g_proc_table[i].m_pid = g_test_procs[i].m_pid;
+		g_proc_table[i].m_priority = g_test_procs[i].m_priority;
 		g_proc_table[i].m_stack_size = g_test_procs[i].m_stack_size;
 		g_proc_table[i].mpf_start_pc = g_test_procs[i].mpf_start_pc;
 	}
@@ -56,6 +131,8 @@ void process_init()
 		int j;
 		(gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
 		(gp_pcbs[i])->m_state = NEW;
+		(gp_pcbs[i])->m_priority = (g_proc_table[i]).m_priority;
+		(gp_pcbs[i])->nextPCB = NULL;
 		
 		sp = alloc_stack((g_proc_table[i]).m_stack_size);
 		*(--sp)  = INITIAL_xPSR;      // user process initial xPSR  
@@ -65,7 +142,23 @@ void process_init()
 		}
 		(gp_pcbs[i])->mp_sp = sp;
 	}
-}
+	
+	for ( i = 0; i < 4; i++ ) {
+		//insert PCB[i] into priority queue
+		pqf[i] = NULL;
+		pql[i] = NULL;
+	} //PQueueFirst[0] PQueueFirst[1] PQueueFirst[2] PQueueFirst[3] 
+	
+	for ( i = 0; i < NUM_TEST_PROCS - 1; i++ ) {
+		//insert PCB[i] into priority queue
+		printf("iValue 0x%x \n", gp_pcbs[i]);
+		processEnqueue(gp_pcbs[i]);
+	}
+	
+	/* initialize priority queue */
+	
+	
+} //gp_pcbs[0] gp_pcbs[1] gp_pcbs[2] gp_pcbs[3] gp_pcbs[4] gp_pcbs[5]
 
 /*@brief: scheduler, pick the pid of the next to run process
  *@return: PCB pointer of the next to run process
@@ -77,17 +170,13 @@ void process_init()
 PCB *scheduler(void)
 {
 	if (gp_current_process == NULL) {
-		gp_current_process = gp_pcbs[0]; 
-		return gp_pcbs[0];
+		printf("HI");
+		return gp_pcbs[5];
 	}
 
-	if ( gp_current_process == gp_pcbs[0] ) {
-		return gp_pcbs[1];
-	} else if ( gp_current_process == gp_pcbs[1] ) {
-		return gp_pcbs[0];
-	} else {
-		return NULL;
-	}
+	processEnqueue(gp_current_process);
+	return processDequeue();
+	
 }
 
 /*@brief: switch out old pcb (p_pcb_old), run the new pcb (gp_current_process)
@@ -150,4 +239,39 @@ int k_release_processor(void)
 	}
 	process_switch(p_pcb_old);
 	return RTX_OK;
+}
+
+int set_process_priority(int process_id, int priority){
+	int i;
+	for (i = 0; i < NUM_TEST_PROCS; i++){
+		if (gp_pcbs[i]->m_pid == process_id){
+			#ifdef DEBUG_0
+			printf("Setting Process Priority: %d\n", priority);
+			#endif /* DEBUG_0 */
+			gp_pcbs[i]->m_priority = priority;
+			return RTX_OK;
+		}
+	}
+	#ifdef DEBUG_0
+			printf("Setting process priority failed.");
+	#endif /* DEBUG_0 */
+	return RTX_ERR;
+}
+
+int get_process_priority(int process_id){
+	int i;
+	int priority = -1;
+	for (i = 0; i < NUM_TEST_PROCS; i++){
+		if (gp_pcbs[i]->m_pid == process_id){
+			priority = gp_pcbs[i]->m_priority;
+			#ifdef DEBUG_0
+			printf("Getting Process Priority: %d\n", priority);
+			#endif /* DEBUG_0 */
+			return priority;
+		}
+	}
+	#ifdef DEBUG_0
+			printf("Getting Process Priority: %d\n", priority);
+	#endif /* DEBUG_0 */
+	return priority;
 }

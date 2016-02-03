@@ -26,11 +26,35 @@ unsigned int numOfBlocks;
 0x10008000+---------------------------+ High Address
           |    Proc 1 STACK           |
           |---------------------------|
-          |    Proc 2 STACK                                 |
+          |    Proc 2 STACK           |
           |---------------------------|<--- gp_stack
           |                           |
           |        HEAP               |
           |                           |
+          |---------------------------|
+					|        PQueueLast[3]      |
+          |---------------------------|
+					|        PQueueLast[2]      |
+          |---------------------------|
+					|        PQueueLast[1]      |
+          |---------------------------|
+					|        PQueueLast[0]      |
+          |---------------------------|
+					|        PQueueFirst[3]     |
+          |---------------------------|
+					|        PQueueFirst[2]     |
+          |---------------------------|
+					|        PQueueFirst[1]     |
+          |---------------------------|
+					|        PQueueFirst[0]     |
+          |---------------------------|
+					|        null PCB           |
+          |---------------------------|
+					|        PCB 5              |
+          |---------------------------|
+					|        PCB 4              |
+          |---------------------------|
+					|        PCB 3              |
           |---------------------------|
           |        PCB 2              |
           |---------------------------|
@@ -64,9 +88,31 @@ void memory_init(void)
 		gp_pcbs[i] = (PCB *)p_end;
 		p_end += sizeof(PCB); 
 	}
+	
+	PQueueFirst = (PCB ***)p_end;
+	for ( i = 0; i < 4; i++ ) {
+		PQueueFirst[i] = (PCB **)p_end;
+		p_end += sizeof(PCB*);
+	}
+	
+	PQueueLast = (PCB ***)p_end;
+	for ( i = 0; i < 4; i++ ) {
+		PQueueLast[i] = (PCB **)p_end;
+		p_end += sizeof(PCB*);
+	}
+	
+/*	BlockedQueueFirst = (PCB **)p_end;
+	p_end += sizeof(PCB*);
+	
+	BlockedQueueLast = (PCB **)p_end;
+	p_end += sizeof(PCB*); */
 #ifdef DEBUG_0  
 	printf("gp_pcbs[0] = 0x%x \n", gp_pcbs[0]);
 	printf("gp_pcbs[1] = 0x%x \n", gp_pcbs[1]);
+	printf("gp_pcbs[2] = 0x%x \n", gp_pcbs[2]);
+	printf("gp_pcbs[3] = 0x%x \n", gp_pcbs[3]);
+	printf("gp_pcbs[4] = 0x%x \n", gp_pcbs[4]);
+	printf("gp_pcbs[5] = 0x%x \n", gp_pcbs[5]);
 #endif
 	
 	/* prepare for alloc_stack() to allocate memory for stacks */
