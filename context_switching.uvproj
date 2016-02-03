@@ -421,11 +421,6 @@
               <FileType>1</FileType>
               <FilePath>.\src\main_svc.c</FilePath>
             </File>
-            <File>
-              <FileName>uart_irq.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\src\uart_irq.c</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
@@ -464,14 +459,22 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>Documentation</GroupName>
+          <GroupName>Queue</GroupName>
           <Files>
             <File>
-              <FileName>Abstract.txt</FileName>
+              <FileName>queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>queue.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\Abstract.txt</FilePath>
+              <FilePath>.\src\queue.h</FilePath>
             </File>
           </Files>
+        </Group>
+        <Group>
+          <GroupName>Davids things</GroupName>
         </Group>
       </Groups>
     </Target>
