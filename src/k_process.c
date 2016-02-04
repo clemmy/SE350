@@ -43,37 +43,7 @@ extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
  * NOTE: We assume there are only two user processes in the system in this example.
  */
  
-/*void blockedEnqueue(PCB* thePCB)
-{
-	
-	if (BlockedQueueFirst == NULL){
-		BlockedQueueFirst = thePCB;
-		BlockedQueueLast = thePCB;
-		return;
-	}
-	
-	BlockedQueueLast->nextPCB = thePCB;
-	BlockedQueueLast = thePCB;
-}
-
-PCB* blockedDequeue()
-{
-	int i;
-	PCB* returnPCB;
-	
-	if (BlockedQueueFirst != NULL){
-		returnPCB = BlockedQueueFirst;
-		BlockedQueueFirst = BlockedQueueFirst->nextPCB;
-		returnPCB->nextPCB = NULL;
-		if (BlockedQueueFirst == NULL){
-			BlockedQueueLast = NULL;
-		}
-		return returnPCB;
-	}
-	return NULL;
-} */
- 
-void processEnqueue(PCB* thePCB)
+ void processEnqueue(PCB* thePCB)
 {
 	int priority = thePCB->m_priority; //priority is 0, 1, 2 or 3
 	PCB** pqf = (PCB**)(PQueueFirst);
@@ -108,6 +78,57 @@ PCB* processDequeue()
 		}
 	}
 	return NULL;
+}
+ 
+/*void blockedEnqueue(PCB* thePCB)
+{
+	
+	if (BlockedQueueFirst == NULL){
+		BlockedQueueFirst = thePCB;
+		BlockedQueueLast = thePCB;
+		return;
+	}
+	
+	BlockedQueueLast->nextPCB = thePCB;
+	BlockedQueueLast = thePCB;
+}
+
+PCB* blockedDequeue()
+{
+	int i;
+	PCB* returnPCB;
+	
+	if (BlockedQueueFirst != NULL){
+		returnPCB = BlockedQueueFirst;
+		BlockedQueueFirst = BlockedQueueFirst->nextPCB;
+		returnPCB->nextPCB = NULL;
+		if (BlockedQueueFirst == NULL){
+			BlockedQueueLast = NULL;
+		}
+		return returnPCB;
+	}
+	return NULL;
+} 
+
+int blockedIsEmpty() {
+	
+	
+}*/
+
+void makeReady()
+{
+	PCB* thePCB = blockedDequeue();
+	thePCB->m_state = RDY;
+	processEnqueue(thePCB);
+	k_release_processor();
+}
+
+void makeBlock()
+{
+	gp_current_process->m_state = BLK;
+	blockedEnqueue(gp_current_process);
+	gp_current_process = NULL;
+	k_release_processor();
 }
  
 void process_init() 
@@ -255,6 +276,7 @@ int set_process_priority(int process_id, int priority){
 	#ifdef DEBUG_0
 			printf("Setting process priority failed.");
 	#endif /* DEBUG_0 */
+	k_release_processor();
 	return RTX_ERR;
 }
 

@@ -6,6 +6,7 @@
  */
 
 #include "k_memory.h"
+#include "k_process.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -101,11 +102,20 @@ void memory_init(void)
 		p_end += sizeof(PCB*);
 	}
 	
-/*	BlockedQueueFirst = (PCB **)p_end;
-	p_end += sizeof(PCB*);
+	/* 4 bytes padding */
+	p_end += 4;
 	
-	BlockedQueueLast = (PCB **)p_end;
-	p_end += sizeof(PCB*); */
+/*	BlockedQueueFirst = (PCB ***)p_end;
+	for ( i = 0; i < 4; i++ ) {
+		PQueueFirst[i] = (PCB **)p_end;
+		p_end += sizeof(PCB*);
+	}
+	
+	PQueueLast = (PCB ***)p_end;
+	for ( i = 0; i < 4; i++ ) {
+		PQueueLast[i] = (PCB **)p_end;
+		p_end += sizeof(PCB*);
+	}*/
 #ifdef DEBUG_0  
 	printf("gp_pcbs[0] = 0x%x \n", gp_pcbs[0]);
 	printf("gp_pcbs[1] = 0x%x \n", gp_pcbs[1]);
@@ -172,9 +182,14 @@ void *k_request_memory_block(void) {
 #endif /* ! DEBUG_0 */
 	prevHead = memQueue.head;
 	
-	if (memQueue.head == NULL) {
-		prevHead = NULL;
-	} else if (memQueue.head == memQueue.tail) {
+// 	if (memQueue.head == NULL) {
+// 		prevHead = NULL;
+// 	} else 
+	while (memQueue.head == NULL) {
+		makeBlock();
+	}
+	
+	if (memQueue.head == memQueue.tail) {
 		memQueue.tail = NULL;
 		memQueue.head = NULL;
 	} 
@@ -192,6 +207,11 @@ int k_release_memory_block(void *p_mem_blk) {
 	printf("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
 #endif /* ! DEBUG_0 */
 	
+	if (p_end <= p_mem_blk && p_mem_blk < gp_stack && ((U32)p_mem_blk - (U32)p_end) % BLOCK_SIZE == 0) {
+		return RTX_ERR;
+	}
+	
+	
 	newTail = (MemBlock *) p_mem_blk;
 	newTail->next = NULL;
 	
@@ -201,6 +221,10 @@ int k_release_memory_block(void *p_mem_blk) {
 	} else {
 		memQueue.head = newTail;
 		memQueue.tail = newTail;
+	}
+	
+	if (!blockedIsEmpty()) {
+		makeReady();
 	}
 	
 	return RTX_OK;

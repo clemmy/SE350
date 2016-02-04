@@ -204,6 +204,7 @@ void c_UART0_IRQHandler(void)
 		
 		/* setting the g_switch_flag */
 		if ( g_char_in == 'S' ) {
+		//if ( 1 ){
 			g_switch_flag = 1; 
 		} else {
 			g_switch_flag = 0;
