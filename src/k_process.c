@@ -25,8 +25,11 @@
 /* ----- Global Variables ----- */
 PCB **gp_pcbs;                  /* array of pcbs */
 PCB *gp_current_process = NULL; /* always point to the current RUN process */
-PCB ***PQueueFirst;
-PCB ***PQueueLast;
+PCB* null_pcb;
+
+PCBQ ReadyPQ[NUM_OF_PRIORITIES];
+
+
 /* PCB **BlockedQueueFirst;
 PCB **BlockedQueueLast; */
 
@@ -43,36 +46,33 @@ extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
  * NOTE: We assume there are only two user processes in the system in this example.
  */
  
- void processEnqueue(PCB* thePCB)
+ void processEnqueue(PCBQ pq[],PCB* thePCB)
 {
 	int priority = thePCB->m_priority; //priority is 0, 1, 2 or 3
-	PCB** pqf = (PCB**)(PQueueFirst);
-	PCB** pql = (PCB**)(PQueueLast);
 	
-	if (pqf[priority] == NULL){
-		pqf[priority] = thePCB;
-		pql[priority] = thePCB;
+	PCBQ q = pq[priority];
+	
+	if (q.tail == NULL){
+		q.tail = thePCB;
+		q.head = thePCB;
 		return;
 	}
 	
-	pql[priority]->nextPCB = thePCB;
-	pql[priority] = thePCB;
+	q.tail->nextPCB = thePCB;
+	q.tail = thePCB;
 }
 
-PCB* processDequeue()
+PCB* processDequeue(PCBQ pq[])
 {
-	PCB** pqf = (PCB**)(PQueueFirst);
-	PCB** pql = (PCB**)(PQueueLast);
-	int i;
 	PCB* returnPCB;
-	
-	for (i = 0; i < 4; i++){
-		if (pqf[i] != NULL){
-			returnPCB = pqf[i];
-			pqf[i] = pqf[i]->nextPCB;
+	int i;
+	for (i = 0; i < NUM_OF_PRIORITIES; i++){
+		if (pq[i].head != NULL){
+			returnPCB = pq[i].head;
+			pq[i].head = pq[i].head->nextPCB;
 			returnPCB->nextPCB = NULL;
-			if (pqf[i] == NULL){
-				pql[i] = NULL;
+			if (pq[i].head == NULL){
+				pq[i].tail = NULL;
 			}
 			return returnPCB;
 		}
@@ -130,16 +130,23 @@ void makeBlock()
 	gp_current_process = NULL;
 	k_release_processor();
 } */
+
+void initNullProcess() {
+	null_pcb->m_pid = 0;
+	null_pcb->m_priority = LOWEST + 1;
+	null_pcb->m_stack_size = 0x100;
+}
+
  
 void process_init() 
 {
 	int i;
 	U32 *sp;
-	PCB** pqf = (PCB**)(*PQueueFirst);
-	PCB** pql = (PCB**)(*PQueueLast);
   
         /* fill out the initialization table */
+	initNullProcess();
 	set_test_procs();
+	
 	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		g_proc_table[i].m_pid = g_test_procs[i].m_pid;
 		g_proc_table[i].m_priority = g_test_procs[i].m_priority;
@@ -164,13 +171,15 @@ void process_init()
 		(gp_pcbs[i])->mp_sp = sp;
 	}
 	
-	for ( i = 0; i < 4; i++ ) {
+	for ( i = 0; i < NUM_OF_PRIORITIES; i++ ) {
 		//insert PCB[i] into priority queue
-		pqf[i] = NULL;
-		pql[i] = NULL;
+		ReadyPQ[i].head = NULL;
+		ReadyPQ[i].tail = NULL;
 	} //PQueueFirst[0] PQueueFirst[1] PQueueFirst[2] PQueueFirst[3] 
 	
-	for ( i = 0; i < NUM_TEST_PROCS - 1; i++ ) {
+	
+	
+	for ( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		//insert PCB[i] into priority queue
 		printf("iValue 0x%x \n", gp_pcbs[i]);
 		processEnqueue(gp_pcbs[i]);

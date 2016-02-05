@@ -15,6 +15,19 @@
 /* ----- Definitions ----- */
 
 #define INITIAL_xPSR 0x01000000        /* user process initial xPSR value */
+#define NUM_OF_PRIORITIES 5;
+
+
+typedef struct PCBQ PCBQ;
+struct PCBQ {
+		PCB* head;
+		PCB* tail;
+};
+
+/* ----- Global Variables ----- */
+extern ReadyQ ReadyPQ[NUM_OF_PRIORITIES];
+extern PCB* null_pcb;
+
 
 /* ----- Functions ----- */
 

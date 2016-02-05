@@ -81,6 +81,11 @@ void memory_init(void)
 	/* 4 bytes padding */
 	p_end += 4;
 
+	// ALLOCATE MEMORY FOR NULL PROCESS SEPARATELY
+	null_pcb = (PCB*) p_end;
+	p_end += sizeof(PCB*);
+	
+	// ALLOCATE MEMORY FOR USER PROCS
 	/* allocate memory for pcb pointers   */
 	gp_pcbs = (PCB **)p_end;
 	p_end += NUM_TEST_PROCS * sizeof(PCB *);
@@ -90,7 +95,7 @@ void memory_init(void)
 		p_end += sizeof(PCB); 
 	}
 	
-	PQueueFirst = (PCB ***)p_end;
+/*	PQueueFirst = (PCB ***)p_end;
 	for ( i = 0; i < 4; i++ ) {
 		PQueueFirst[i] = (PCB **)p_end;
 		p_end += sizeof(PCB*);
@@ -100,7 +105,7 @@ void memory_init(void)
 	for ( i = 0; i < 4; i++ ) {
 		PQueueLast[i] = (PCB **)p_end;
 		p_end += sizeof(PCB*);
-	}
+	}*/
 	
 	/* 4 bytes padding */
 	p_end += 4;
