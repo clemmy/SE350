@@ -25,8 +25,8 @@ struct PCBQ {
 };
 
 /* ----- Global Variables ----- */
-extern ReadyQ ReadyPQ[NUM_OF_PRIORITIES];
-extern PCB* null_pcb;
+extern PCBQ ReadyPQ[NUM_OF_PRIORITIES];
+extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
 
 /* ----- Functions ----- */
@@ -36,7 +36,7 @@ PCB *scheduler(void);                  /* pick the pid of the next to run proces
 int k_release_process(void);           /* kernel release_process function */
 int set_process_priority(int process_id, int priority); /* sets priority of this process to this priority */
 int get_process_priority(int process_id);								/* returns the priority of the specified process. Returns -1 if failed */
-
+void nullProc(void);
 
 
 extern U32 *alloc_stack(U32 size_b);   /* allocate stack for a process */

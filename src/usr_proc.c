@@ -24,15 +24,13 @@ void set_test_procs() {
 		g_test_procs[i].m_priority=MEDIUM;
 		g_test_procs[i].m_stack_size=0x100;
 	}
-	
-	g_test_procs[5].m_priority=LOWEST; //Null Process has LOWEST priority
   
 	g_test_procs[0].mpf_start_pc = &proc1;
 	g_test_procs[1].mpf_start_pc = &proc2;
 	g_test_procs[2].mpf_start_pc = &proc3;
 	g_test_procs[3].mpf_start_pc = &proc4;
 	g_test_procs[4].mpf_start_pc = &proc5;
-	g_test_procs[5].mpf_start_pc = &nullProc;
+	g_test_procs[5].mpf_start_pc = &proc6;
 }
 
 
