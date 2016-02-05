@@ -182,12 +182,12 @@ void *k_request_memory_block(void) {
 #endif /* ! DEBUG_0 */
 	prevHead = memQueue.head;
 	
-// 	if (memQueue.head == NULL) {
-// 		prevHead = NULL;
-// 	} else 
-	while (memQueue.head == NULL) {
-		makeBlock();
-	}
+	if (memQueue.head == NULL) {
+		prevHead = NULL;
+	} else 
+// 	while (memQueue.head == NULL) {
+// 		makeBlock();
+// 	}
 	
 	if (memQueue.head == memQueue.tail) {
 		memQueue.tail = NULL;
@@ -223,9 +223,9 @@ int k_release_memory_block(void *p_mem_blk) {
 		memQueue.tail = newTail;
 	}
 	
-	if (!blockedIsEmpty()) {
-		makeReady();
-	}
+// 	if (!blockedIsEmpty()) {
+// 		makeReady();
+// 	}
 	
 	return RTX_OK;
 }

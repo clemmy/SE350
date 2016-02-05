@@ -20,6 +20,10 @@
 #include "printf.h"
 #endif /* DEBUG_0 */
 
+//IF IT WON'T DOWNLOAD (FLASH DOWNLOAD FAILED)
+//DELETE NO_CRP UNDER ASM TAB IN TARGET OPTIONS
+//(also try downloading to Flash memory on a different profile)
+
 int main() 
 {	
 	/* CMSIS system initialization */

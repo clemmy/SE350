@@ -215,9 +215,10 @@ void c_UART0_IRQHandler(void)
 		if (*gp_buffer != '\0' ) {
 			g_char_out = *gp_buffer;
 #ifdef DEBUG_0
-			//uart1_put_string("Writing a char = ");
-			//uart1_put_char(g_char_out);
-			//uart1_put_string("\n\r");
+			// debugging interrupt TODO: comment out
+			uart1_put_string("Writing a char = ");
+			uart1_put_char(g_char_out);
+			uart1_put_string("\n\r");
 			
 			// you could use the printf instead
 			printf("Writing a char = %c \n\r", g_char_out);
