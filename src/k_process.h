@@ -15,7 +15,7 @@
 /* ----- Definitions ----- */
 
 #define INITIAL_xPSR 0x01000000        /* user process initial xPSR value */
-#define NUM_OF_PRIORITIES 5;
+#define NUM_OF_PRIORITIES 5
 
 
 typedef struct PCBQ PCBQ;
@@ -28,12 +28,11 @@ struct PCBQ {
 extern PCBQ ReadyPQ[NUM_OF_PRIORITIES];
 extern PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
-
 /* ----- Functions ----- */
 
 void process_init(void);               /* initialize all procs in the system */
 PCB *scheduler(void);                  /* pick the pid of the next to run process */
-int k_release_process(void);           /* kernel release_process function */
+int k_release_processor(void);           /* kernel release_process function */
 int set_process_priority(int process_id, int priority); /* sets priority of this process to this priority */
 int get_process_priority(int process_id);								/* returns the priority of the specified process. Returns -1 if failed */
 void nullProc(void);
@@ -42,5 +41,8 @@ void nullProc(void);
 extern U32 *alloc_stack(U32 size_b);   /* allocate stack for a process */
 extern void __rte(void);               /* pop exception stack frame */
 extern void set_test_procs(void);      /* test process initial set up */
+extern void makeBlock(void);
+extern void makeReady(void);
+extern int blockPQIsEmpty(void);
 
 #endif /* ! K_PROCESS_H_ */

@@ -48,7 +48,7 @@ void proc1(void)
 	//void* blocks[249];
 	
 // 	for (j = 0; ; j++) {
-// 		curBlock = k_request_memory_block();
+// 		curBlock = request_memory_block();
 // 		if (curBlock == NULL) {
 // 			break;
 // 		}
@@ -60,19 +60,18 @@ void proc1(void)
 		//blocks[j] = curBlock;
 	//}
 	
-/*	int j;
-	void* curBlock;
+	int j;
 	void* blocks[3];
 	
 	for (j=0;j<3;j++) {
-		blocks[j] = k_request_memory_block();
+		blocks[j] = request_memory_block();
 	}
 	
 	for (j=2;j>=0;j--) {
-		k_release_memory_block(blocks[j]);
+		release_memory_block(blocks[j]);
 	}
-*/
-	// curBlock = k_request_memory_block();
+
+	// curBlock = request_memory_block();
 
 	while ( 1) {
 		if ( i != 0 && i%5 == 0 ) {
@@ -85,7 +84,7 @@ void proc1(void)
 			
 #endif /* DEBUG_0 */
 			}
-			for ( x = 0; x < 500000; x++); // some artifical delay
+			for ( x = 0; x < 100000; x++); // some artifical delay
 		}
 		uart1_put_char('A' + i%26);
 		i++;
@@ -113,36 +112,11 @@ void proc2(void)
 			
 #endif /* DEBUG_0 */
 			}
-			for ( x = 0; x < 500000; x++); // some artifical delay
+			for ( x = 0; x < 100000; x++); // some artifical delay
 		}
 		uart1_put_char('0' + i%10);
 		i++;
 		
-	}
-}
-
-/**
- * @brief: a process that prints four a's (setting a new priority each time if debugging)
- *         and then yields the cpu.
- */
-void proc3(void)
-{
-	int i = 0;
-	int ret_val = 30;
-	while ( 1) {
-		if ( i != 0 && i%4 == 0 ) {
-			uart0_put_string("\n\r");
-			ret_val = release_processor();
-#ifdef DEBUG_0
-			printf("proc3: ret_val=%d\n", ret_val);
-			get_process_priority(3);
-#endif /* DEBUG_0 */
-		}
-#ifdef DEBUG_0
-		//set_process_priority(3, 0);
-#endif /* DEBUG_0 */
-		uart0_put_char('a');
-		i++;
 	}
 }
 
@@ -156,14 +130,14 @@ void proc4(void)
 	int ret_val = 40;
 	while ( 1) {
 		if ( i != 0 && i%5 == 0 ) {
-			uart0_put_string("\n\r");
+			uart1_put_string("\n\r");
 			ret_val = release_processor();
 #ifdef DEBUG_0
 			printf("proc4: ret_val=%d\n", ret_val);
 			get_process_priority(4);
 #endif /* DEBUG_0 */
 		}
-		uart0_put_char('9' - i%10);
+		uart1_put_char('9' - i%10);
 		i++;
 	}
 }
@@ -178,31 +152,183 @@ void proc5(void)
 	int ret_val = 50;
 	while ( 1) {
 		if ( i != 0 && i%3 == 0 ) {
-			uart0_put_string("\n\r");
+			uart1_put_string("\n\r");
 			ret_val = release_processor();
 #ifdef DEBUG_0
 			printf("proc5: ret_val=%d\n", ret_val);
 			get_process_priority(5);
 #endif /* DEBUG_0 */
 		}
-		uart0_put_char('6');
+		uart1_put_char('6');
 		i++;
 	}
 }
 
 /**
- * @brief: a process that
- *         yields the cpu.
+ * @brief: This process is too cool to tell you what it does.
  */
-void nullProc(void)
+void proc6(void)
 {
-	int ret_val = 666;
-	while ( 1) {
+	int i = 0;
+	int ret_val = 50;
+	while (1) {
+		if ( i != 0 && i%4 == 0 ) {
+			uart1_put_string("\n\r");
+			ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("nullProc: ret_val=%d\n", ret_val);
+			printf("proc6: ret_val=%d\n", ret_val);
 			get_process_priority(6);
 #endif /* DEBUG_0 */
-			ret_val = release_processor();
+		}
+		uart1_put_char('7');
+		i++;
 	}
+}
 
+/**
+ * @brief: a process that sets its priority higher than the other processes and
+ *         yields the cpu.
+ */
+void takeOver(void) //takeOver
+{
+	int i = 0;
+	int ret_val = 30;
+	while ( 1) {
+		if ( i != 0 && i%4 == 0 ) {
+			uart1_put_string("\n\r");
+			set_process_priority(3, 0);
+			ret_val = release_processor();
+#ifdef DEBUG_0
+			printf("proc3: ret_val=%d\n", ret_val);
+			get_process_priority(3);
+#endif /* DEBUG_0 */
+		}
+		uart1_put_char('a');
+		i++;
+	}
+}
+
+/**
+ * @brief: a process that sets its priority lower than the other processes and
+ *         yields the cpu.
+ */
+void proc3(void) //remissive
+{
+	int i = 0;
+	int ret_val = 30;
+	while ( 1) {
+		if ( i != 0 && i%4 == 0 ) {
+			uart1_put_string("\n\r");
+			set_process_priority(3, 2);
+			ret_val = release_processor();
+#ifdef DEBUG_0
+			printf("proc3: ret_val=%d\n", ret_val);
+			get_process_priority(3);
+#endif /* DEBUG_0 */
+		}
+		uart1_put_char('a');
+		i++;
+	}
+}
+
+/**
+ * @brief: a process that sets its own priority to itself
+ */
+void unchangeItself(void)
+{
+	int i = 0;
+	int ret_val = 30;
+	while ( 1) {
+		if ( i != 0 && i%4 == 0 ) {
+			uart1_put_string("\n\r");
+			set_process_priority(3, 1);
+			ret_val = release_processor();
+#ifdef DEBUG_0
+			printf("proc3: ret_val=%d\n", ret_val);
+			get_process_priority(3);
+#endif /* DEBUG_0 */
+		}
+		uart1_put_char('a');
+		i++;
+	}
+}
+
+/**
+ * @brief: a process that sets its priority higher than the other processes and
+ *         yields the cpu.
+ */
+void giveTime(void)
+{
+	int i = 0;
+	int ret_val = 30;
+	while ( 1) {
+		if ( i != 0 && i%4 == 0 ) {
+			uart1_put_string("\n\r");
+			set_process_priority(2, 0);
+			ret_val = release_processor();
+#ifdef DEBUG_0
+			printf("proc3: ret_val=%d\n", ret_val);
+			get_process_priority(3);
+#endif /* DEBUG_0 */
+		}
+		uart1_put_char('a');
+		i++;
+	}
+}
+
+/**
+ * @brief: a process that sets its priority lower than the other processes and
+ *         yields the cpu.
+ */
+void makeLame(void)
+{
+	int i = 0;
+	int ret_val = 30;
+	while ( 1) {
+		if ( i != 0 && i%4 == 0 ) {
+			uart1_put_string("\n\r");
+			set_process_priority(2, 2);
+			ret_val = release_processor();
+#ifdef DEBUG_0
+			printf("proc3: ret_val=%d\n", ret_val);
+			get_process_priority(3);
+#endif /* DEBUG_0 */
+		}
+		uart1_put_char('a');
+		i++;
+	}
+}
+
+/**
+ * @brief: a process that sets its own priority to itself
+ */
+void unchangeOther(void)
+{
+	int i = 0;
+	int ret_val = 30;
+	while ( 1) {
+		if ( i != 0 && i%4 == 0 ) {
+			uart1_put_string("\n\r");
+			set_process_priority(3, 1);
+			ret_val = release_processor();
+#ifdef DEBUG_0
+			printf("proc3: ret_val=%d\n", ret_val);
+			get_process_priority(3);
+#endif /* DEBUG_0 */
+		}
+		uart1_put_char('a');
+		i++;
+	}
+}
+
+
+/**
+ * @brief: a process that eats all memory.
+ */
+void memoryHog(void)
+{
+	while ( 1) {
+		uart1_put_string("Eating memory!\n\r");
+		request_memory_block();
+	}
 }

@@ -28,6 +28,7 @@ PCB *gp_current_process = NULL; /* always point to the current RUN process */
 PCB* null_pcb;
 
 PCBQ ReadyPQ[NUM_OF_PRIORITIES];
+PCBQ BlockPQ[NUM_OF_PRIORITIES];
 
 
 /* PCB **BlockedQueueFirst;
@@ -50,16 +51,14 @@ PROC_INIT g_proc_table[NUM_PROCS];
 {
 	int priority = thePCB->m_priority; //priority is 0, 1, 2 or 3
 	
-	PCBQ q = pq[priority];
-	
-	if (q.tail == NULL){
-		q.tail = thePCB;
-		q.head = thePCB;
+	if (pq[priority].tail == NULL){
+		pq[priority].tail = thePCB;
+		pq[priority].head = thePCB;
 		return;
 	}
 	
-	q.tail->nextPCB = thePCB;
-	q.tail = thePCB;
+	pq[priority].tail->nextPCB = thePCB;
+	pq[priority].tail = thePCB;
 }
 
 PCB* processDequeue(PCBQ pq[])
@@ -79,57 +78,36 @@ PCB* processDequeue(PCBQ pq[])
 	}
 	return NULL;
 }
- 
-/*void blockedEnqueue(PCB* thePCB)
-{
-	
-	if (BlockedQueueFirst == NULL){
-		BlockedQueueFirst = thePCB;
-		BlockedQueueLast = thePCB;
-		return;
-	}
-	
-	BlockedQueueLast->nextPCB = thePCB;
-	BlockedQueueLast = thePCB;
-}
 
-PCB* blockedDequeue()
+void makeReady()
 {
-	int i;
-	PCB* returnPCB;
-	
-	if (BlockedQueueFirst != NULL){
-		returnPCB = BlockedQueueFirst;
-		BlockedQueueFirst = BlockedQueueFirst->nextPCB;
-		returnPCB->nextPCB = NULL;
-		if (BlockedQueueFirst == NULL){
-			BlockedQueueLast = NULL;
-		}
-		return returnPCB;
-	}
-	return NULL;
-} 
-
-int blockedIsEmpty() {
-	
-	
-}*/
-
-/*void makeReady()
-{
-	PCB* thePCB = blockedDequeue();
+	PCB* thePCB = processDequeue(BlockPQ);
 	thePCB->m_state = RDY;
-	processEnqueue(thePCB);
+	processEnqueue(ReadyPQ, thePCB);
 	k_release_processor();
 }
 
 void makeBlock()
 {
 	gp_current_process->m_state = BLK;
-	blockedEnqueue(gp_current_process);
+	processEnqueue(BlockPQ, gp_current_process);
 	gp_current_process = NULL;
 	k_release_processor();
-} */
+}
+
+int queueIsEmpty(PCBQ pq[]) {
+	int i;
+	for (i = 0; i < NUM_OF_PRIORITIES; i++) {
+		if (pq[i].head != NULL) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
+int blockPQIsEmpty() {
+	return queueIsEmpty(BlockPQ);
+}
 
 void process_init() 
 {
@@ -140,7 +118,7 @@ void process_init()
 	set_test_procs();
 	
 	g_proc_table[0].m_pid = 0;
-	g_proc_table[0].m_priority = LOWEST + 1;
+	g_proc_table[0].m_priority = NULL_PRIORITY;
 	g_proc_table[0].m_stack_size = 0x100;
 	g_proc_table[0].mpf_start_pc = &nullProc;
 	
@@ -171,6 +149,8 @@ void process_init()
 	for ( i = 0; i < NUM_OF_PRIORITIES; i++ ) {
 		ReadyPQ[i].head = NULL;
 		ReadyPQ[i].tail = NULL;
+		BlockPQ[i].head = NULL;
+		BlockPQ[i].tail = NULL;
 	} //PQueueFirst[0] PQueueFirst[1] PQueueFirst[2] PQueueFirst[3] 
 	
 	/* initialize priority queue */
@@ -190,12 +170,9 @@ void process_init()
 
 PCB *scheduler(void)
 {
-	if (gp_current_process == NULL) {
-		printf("HI");
-		return gp_pcbs[0];
+	if (gp_current_process != NULL) {
+		processEnqueue(ReadyPQ, gp_current_process);
 	}
-
-	processEnqueue(ReadyPQ, gp_current_process);
 	return processDequeue(ReadyPQ);
 }
 
@@ -264,27 +241,34 @@ int k_release_processor(void)
 // TODO blocked queue
 void moveProcessToPriority(PCB* thePCB, int old_priority) {
 	// int new_priority = thePCB->priority;
-	PCBQ oldQueue = ReadyPQ[old_priority];
+	PCBQ* pq;
+ 	if (thePCB->m_state == BLK) {
+ 		pq = BlockPQ;
+ 	}
+ 	else {
+		pq = ReadyPQ;
+	}
+
 	// remove from queue
 	
-	if (oldQueue.head == NULL) { // empty
+	if (pq[old_priority].head == NULL) { // empty
 		return; // error
-	} else if (oldQueue.head == oldQueue.tail) { // 1 element
-		if (thePCB != oldQueue.head) {
+	} else if (pq[old_priority].head == pq[old_priority].tail) { // 1 element
+		if (thePCB != pq[old_priority].head) {
 			return; // error
 		}
-		oldQueue.head = NULL;
-		oldQueue.tail = NULL;
-	} else if (oldQueue.head == thePCB) { // 1st element in LL with length > 1
-		oldQueue.head = oldQueue.head->nextPCB;
+		pq[old_priority].head = NULL;
+		pq[old_priority].tail = NULL;
+	} else if (pq[old_priority].head == thePCB) { // 1st element in LL with length > 1
+		pq[old_priority].head = pq[old_priority].head->nextPCB;
 	} else { // middle of the linked list
 		PCB* current;
-		for (current = oldQueue.head; current != NULL; current=current->nextPCB) {
+		for (current = pq[old_priority].head; current != NULL; current=current->nextPCB) {
 			if (current->nextPCB == thePCB) {
 				current->nextPCB = thePCB->nextPCB;
 				
-				if (thePCB == oldQueue.tail) {
-					oldQueue.tail = current;
+				if (thePCB == pq[old_priority].tail) {
+					pq[old_priority].tail = current;
 				}
 				break;
 			}
@@ -292,7 +276,7 @@ void moveProcessToPriority(PCB* thePCB, int old_priority) {
 	}
 	
 	thePCB->nextPCB = NULL;
-	processEnqueue(ReadyPQ, thePCB);
+	processEnqueue(pq, thePCB);
 }
 
 int set_process_priority(int process_id, int priority){
@@ -355,9 +339,8 @@ void nullProc(void)
 	while ( 1) {
 #ifdef DEBUG_0
 			printf("nullProc: ret_val=%d\n", ret_val);
-			get_process_priority(6);
+			get_process_priority(0);
 #endif /* DEBUG_0 */
-			ret_val = release_processor();
+			ret_val = k_release_processor();
 	}
-
 }

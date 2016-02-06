@@ -32,24 +32,8 @@ unsigned int numOfBlocks;
           |                           |
           |        HEAP               |
           |                           |
-          |---------------------------|
-					|        PQueueLast[3]      |
-          |---------------------------|
-					|        PQueueLast[2]      |
-          |---------------------------|
-					|        PQueueLast[1]      |
-          |---------------------------|
-					|        PQueueLast[0]      |
-          |---------------------------|
-					|        PQueueFirst[3]     |
-          |---------------------------|
-					|        PQueueFirst[2]     |
-          |---------------------------|
-					|        PQueueFirst[1]     |
-          |---------------------------|
-					|        PQueueFirst[0]     |
-          |---------------------------|
-					|        null PCB           |
+					|---------------------------|
+					|        PCB 6              |
           |---------------------------|
 					|        PCB 5              |
           |---------------------------|
@@ -61,7 +45,7 @@ unsigned int numOfBlocks;
           |---------------------------|
           |        PCB 1              |
           |---------------------------|
-          |        PCB pointers       |
+					|        null PCB           |
           |---------------------------|<--- gp_pcbs
           |        Padding            |
           |---------------------------|  
@@ -80,12 +64,7 @@ void memory_init(void)
   
 	/* 4 bytes padding */
 	p_end += 4;
-
-	// ALLOCATE MEMORY FOR NULL PROCESS SEPARATELY
-	null_pcb = (PCB*) p_end;
-	p_end += sizeof(PCB*);
 	
-	// ALLOCATE MEMORY FOR USER PROCS
 	/* allocate memory for pcb pointers   */
 	gp_pcbs = (PCB **)p_end;
 	p_end += NUM_PROCS * sizeof(PCB *);
@@ -95,43 +74,16 @@ void memory_init(void)
 		p_end += sizeof(PCB); 
 	}
 	
-/*	PQueueFirst = (PCB ***)p_end;
-	for ( i = 0; i < 4; i++ ) {
-		PQueueFirst[i] = (PCB **)p_end;
-		p_end += sizeof(PCB*);
-	}
-	
-	PQueueLast = (PCB ***)p_end;
-	for ( i = 0; i < 4; i++ ) {
-		PQueueLast[i] = (PCB **)p_end;
-		p_end += sizeof(PCB*);
-	}*/
-	
 	/* 4 bytes padding */
 	p_end += 4;
 	
-/*	BlockedQueueFirst = (PCB ***)p_end;
-	for ( i = 0; i < 4; i++ ) {
-		PQueueFirst[i] = (PCB **)p_end;
-		p_end += sizeof(PCB*);
-	}
-	
-	PQueueLast = (PCB ***)p_end;
-	for ( i = 0; i < 4; i++ ) {
-		PQueueLast[i] = (PCB **)p_end;
-		p_end += sizeof(PCB*);
-	}*/
 #ifdef DEBUG_0  
-	printf("gp_pcbs[0] = 0x%x \n", gp_pcbs[0]);
-	printf("gp_pcbs[1] = 0x%x \n", gp_pcbs[1]);
-	printf("gp_pcbs[2] = 0x%x \n", gp_pcbs[2]);
-	printf("gp_pcbs[3] = 0x%x \n", gp_pcbs[3]);
-	printf("gp_pcbs[4] = 0x%x \n", gp_pcbs[4]);
-	printf("gp_pcbs[5] = 0x%x \n", gp_pcbs[5]);
+	for (i = 0; i < NUM_PROCS; i++){
+		printf("gp_pcbs[%d] = 0x%x \n", i, gp_pcbs[i]);
+	}
 #endif
 	
 	/* prepare for alloc_stack() to allocate memory for stacks */
-	
 	gp_stack = (U32 *)RAM_END_ADDR;
 	if ((U32)gp_stack & 0x04) { /* 8 bytes alignment */
 		--gp_stack; 
@@ -187,12 +139,12 @@ void *k_request_memory_block(void) {
 #endif /* ! DEBUG_0 */
 	prevHead = memQueue.head;
 	
-	if (memQueue.head == NULL) {
-		prevHead = NULL;
-	} else 
-// 	while (memQueue.head == NULL) {
-// 		makeBlock();
-// 	}
+// 	if (memQueue.head == NULL) {
+// 		prevHead = NULL;
+// 	} else 
+	while (memQueue.head == NULL) {
+		makeBlock();
+	}
 	
 	if (memQueue.head == memQueue.tail) {
 		memQueue.tail = NULL;
@@ -203,7 +155,7 @@ void *k_request_memory_block(void) {
 	}
 	
 	
-	return (void *) prevHead; // NULL if there is no memory left
+	return (void *) prevHead; 
 }
 
 int k_release_memory_block(void *p_mem_blk) {
@@ -212,10 +164,9 @@ int k_release_memory_block(void *p_mem_blk) {
 	printf("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
 #endif /* ! DEBUG_0 */
 	
-	if (p_end <= p_mem_blk && p_mem_blk < gp_stack && ((U32)p_mem_blk - (U32)p_end) % BLOCK_SIZE == 0) {
+	if (!(p_end <= p_mem_blk && p_mem_blk < gp_stack && ((U32)p_mem_blk - (U32)p_end) % BLOCK_SIZE == 0)) {
 		return RTX_ERR;
 	}
-	
 	
 	newTail = (MemBlock *) p_mem_blk;
 	newTail->next = NULL;
@@ -228,9 +179,9 @@ int k_release_memory_block(void *p_mem_blk) {
 		memQueue.tail = newTail;
 	}
 	
-// 	if (!blockedIsEmpty()) {
-// 		makeReady();
-// 	}
+	if (!blockPQIsEmpty()) {
+		makeReady();
+	}
 	
 	return RTX_OK;
 }
