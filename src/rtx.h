@@ -38,6 +38,10 @@ extern int k_release_processor(void);
 #define release_processor() _release_processor((U32)k_release_processor)
 extern int __SVC_0 _release_processor(U32 p_func);
 
+extern int k_set_process_priority(int process_id, int priority);
+#define set_process_priority(a, b) _set_process_priority((U32)k_set_process_priority, a, b)
+extern int __SVC_0 _set_process_priority(U32 p_func, int a, int b);
+
 extern void *k_request_memory_block(void);
 #define request_memory_block() _request_memory_block((U32)k_request_memory_block)
 extern void *_request_memory_block(U32 p_func) __SVC_0;

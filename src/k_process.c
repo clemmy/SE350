@@ -90,8 +90,8 @@ void makeReady()
 void makeBlock()
 {
 	gp_current_process->m_state = BLK;
-	processEnqueue(BlockPQ, gp_current_process);
-	gp_current_process = NULL;
+	//processEnqueue(BlockPQ, gp_current_process);
+	//gp_current_process = NULL;
 	k_release_processor();
 }
 
@@ -156,7 +156,9 @@ void process_init()
 	/* initialize priority queue */
 	for ( i = 0; i < NUM_PROCS; i++ ) {
 		//insert PCB[i] into priority queue
+#ifdef DEBUG_0
 		printf("iValue 0x%x \n", gp_pcbs[i]);
+#endif
 		processEnqueue(ReadyPQ, gp_pcbs[i]);
 	}
 } //gp_pcbs[0] gp_pcbs[1] gp_pcbs[2] gp_pcbs[3] gp_pcbs[4] gp_pcbs[5]
@@ -171,7 +173,12 @@ void process_init()
 PCB *scheduler(void)
 {
 	if (gp_current_process != NULL) {
-		processEnqueue(ReadyPQ, gp_current_process);
+		if (gp_current_process->m_state == BLK){
+			processEnqueue(BlockPQ, gp_current_process);
+		}
+		else {
+			processEnqueue(ReadyPQ, gp_current_process);
+		}
 	}
 	return processDequeue(ReadyPQ);
 }
@@ -192,7 +199,9 @@ int process_switch(PCB *p_pcb_old)
 
 	if (state == NEW) {
 		if (gp_current_process != p_pcb_old && p_pcb_old->m_state != NEW) {
-			p_pcb_old->m_state = RDY;
+			if (p_pcb_old->m_state != BLK){
+				p_pcb_old->m_state = RDY;
+			}
 			p_pcb_old->mp_sp = (U32 *) __get_MSP();
 		}
 		gp_current_process->m_state = RUN;
@@ -204,7 +213,9 @@ int process_switch(PCB *p_pcb_old)
 
 	if (gp_current_process != p_pcb_old) {
 		if (state == RDY){ 		
-			p_pcb_old->m_state = RDY; 
+			if (p_pcb_old->m_state != BLK){
+				p_pcb_old->m_state = RDY;
+			}
 			p_pcb_old->mp_sp = (U32 *) __get_MSP(); // save the old process's sp
 			gp_current_process->m_state = RUN;
 			__set_MSP((U32) gp_current_process->mp_sp); //switch to the new proc's stack    
@@ -238,7 +249,6 @@ int k_release_processor(void)
 	return RTX_OK;
 }
 
-// TODO blocked queue
 void moveProcessToPriority(PCB* thePCB, int old_priority) {
 	// int new_priority = thePCB->priority;
 	PCBQ* pq;
@@ -279,7 +289,7 @@ void moveProcessToPriority(PCB* thePCB, int old_priority) {
 	processEnqueue(pq, thePCB);
 }
 
-int set_process_priority(int process_id, int priority){
+int k_set_process_priority(int process_id, int priority){
 	int i;
 	int old_priority;
 	PCB* thePCB;

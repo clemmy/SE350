@@ -9,7 +9,6 @@
 #define USR_PROC_H
 
 extern int get_process_priority(int process_id);
-extern int set_process_priority(int process_id, int priority);
 
 void set_test_procs(void);
 void proc1(void);
