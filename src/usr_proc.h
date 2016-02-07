@@ -8,8 +8,6 @@
 #ifndef USR_PROC_H_
 #define USR_PROC_H
 
-extern int get_process_priority(int process_id);
-
 void set_test_procs(void);
 void proc1(void);
 void proc2(void);

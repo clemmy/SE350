@@ -321,7 +321,7 @@ int k_set_process_priority(int process_id, int priority){
 	return RTX_ERR;
 }
 
-int get_process_priority(int process_id){
+int k_get_process_priority(int process_id){
 	int i;
 	int priority = -1;
 	for (i = 0; i < NUM_PROCS; i++){
@@ -349,7 +349,6 @@ void nullProc(void)
 	while ( 1) {
 #ifdef DEBUG_0
 			printf("nullProc: ret_val=%d\n", ret_val);
-			get_process_priority(0);
 #endif /* DEBUG_0 */
 			ret_val = k_release_processor();
 	}
