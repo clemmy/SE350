@@ -41,8 +41,8 @@ void nullProc(void);
 extern U32 *alloc_stack(U32 size_b);   /* allocate stack for a process */
 extern void __rte(void);               /* pop exception stack frame */
 extern void set_test_procs(void);      /* test process initial set up */
-extern void makeBlock(void);
-extern void makeReady(void);
+extern void makeBlock(void);					/* Sets state of current process to blocked */
+extern void makeReady(void);					/* Transfers the highest priority PCB from the block queue to the ready queue*/
 extern int blockPQIsEmpty(void);
 
-#endif /* ! K_PROCESS_H_ */
+#endif

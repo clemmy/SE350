@@ -30,10 +30,6 @@ PCB* null_pcb;
 PCBQ ReadyPQ[NUM_OF_PRIORITIES];
 PCBQ BlockPQ[NUM_OF_PRIORITIES];
 
-
-/* PCB **BlockedQueueFirst;
-PCB **BlockedQueueLast; */
-
 U32 g_switch_flag = 0;          /* whether to continue to run the process before the UART receive interrupt */
                                 /* 1 means to switch to another process, 0 means to continue the current process */
         /* this value will be set by UART handler */
@@ -41,13 +37,10 @@ U32 g_switch_flag = 0;          /* whether to continue to run the process before
 /* process initialization table */
 PROC_INIT g_proc_table[NUM_PROCS];
 
-
 /**
- * @biref: initialize all processes in the system
- * NOTE: We assume there are only two user processes in the system in this example.
+ * @brief: Enqueues the PCB into its corresponding queue (based on priority)
  */
-
- void processEnqueue(PCBQ pq[],PCB* thePCB)
+void processEnqueue(PCBQ pq[], PCB* thePCB)
 {
   int priority = thePCB->m_priority; //priority is 0, 1, 2 or 3
 
@@ -61,6 +54,9 @@ PROC_INIT g_proc_table[NUM_PROCS];
   pq[priority].tail = thePCB;
 }
 
+/**
+ * @brief: Dequeues the first element from the queue with the highest priority
+ */
 PCB* processDequeue(PCBQ pq[])
 {
   PCB* returnPCB;
@@ -79,6 +75,9 @@ PCB* processDequeue(PCBQ pq[])
   return NULL;
 }
 
+/**
+ * @brief: Transfers the highest priority PCB from the block queue to the ready queue
+ */
 void makeReady()
 {
   PCB* thePCB = processDequeue(BlockPQ);
@@ -87,14 +86,18 @@ void makeReady()
   k_release_processor();
 }
 
+/**
+ * @brief: Sets state of current process to blocked
+ */
 void makeBlock()
 {
   gp_current_process->m_state = BLK;
-  //processEnqueue(BlockPQ, gp_current_process);
-  //gp_current_process = NULL;
   k_release_processor();
 }
 
+/**
+ * @brief: Checks if the queue is empty
+ */
 int queueIsEmpty(PCBQ pq[]) {
   int i;
   for (i = 0; i < NUM_OF_PRIORITIES; i++) {
@@ -105,10 +108,16 @@ int queueIsEmpty(PCBQ pq[]) {
   return 1;
 }
 
+/**
+ * @brief: Checks if the block queue is empty
+ */
 int blockPQIsEmpty() {
   return queueIsEmpty(BlockPQ);
 }
 
+/**
+ * @brief: Initializes priority queues, block queues, PCBs, and process tables
+ */
 void process_init()
 {
   int i;
@@ -129,7 +138,7 @@ void process_init()
     g_proc_table[i].mpf_start_pc = g_test_procs[i-1].mpf_start_pc;
   }
 
-  /* initilize exception stack frame (i.e. initial context) for each process */
+  /* initialize exception stack frame (i.e. initial context) for each process */
   for ( i = 0; i < NUM_PROCS; i++ ) {
     int j;
     (gp_pcbs[i])->m_pid = (g_proc_table[i]).m_pid;
@@ -151,7 +160,7 @@ void process_init()
     ReadyPQ[i].tail = NULL;
     BlockPQ[i].head = NULL;
     BlockPQ[i].tail = NULL;
-  } //PQueueFirst[0] PQueueFirst[1] PQueueFirst[2] PQueueFirst[3]
+  }
 
   /* initialize priority queue */
   for ( i = 0; i < NUM_PROCS; i++ ) {
@@ -161,7 +170,7 @@ void process_init()
 #endif
     processEnqueue(ReadyPQ, gp_pcbs[i]);
   }
-} //gp_pcbs[0] gp_pcbs[1] gp_pcbs[2] gp_pcbs[3] gp_pcbs[4] gp_pcbs[5]
+}
 
 /*@brief: scheduler, pick the pid of the next to run process
  *@return: PCB pointer of the next to run process
@@ -169,7 +178,6 @@ void process_init()
  *POST: if gp_current_process was NULL, then it gets set to pcbs[0].
  *      No other effect on other global variables.
  */
-
 PCB *scheduler(void)
 {
   if (gp_current_process != NULL) {
@@ -210,7 +218,6 @@ int process_switch(PCB *p_pcb_old)
   }
 
   /* The following will only execute if the if block above is FALSE */
-
   if (gp_current_process != p_pcb_old) {
     if (state == RDY){
       if (p_pcb_old->m_state != BLK){
@@ -226,8 +233,9 @@ int process_switch(PCB *p_pcb_old)
   }
   return RTX_OK;
 }
+
 /**
- * @brief release_processor().
+ * @brief glorified scheduler() and process_switch()
  * @return RTX_ERR on error and zero on success
  * POST: gp_current_process gets updated to next to run process
  */
@@ -249,8 +257,10 @@ int k_release_processor(void)
   return RTX_OK;
 }
 
+/**
+ * @brief moves pcb to its correct queue (for the case where a process changes another process' priority)
+ */
 void moveProcessToPriority(PCB* thePCB, int old_priority) {
-  // int new_priority = thePCB->priority;
   PCBQ* pq;
    if (thePCB->m_state == BLK) {
      pq = BlockPQ;
@@ -259,8 +269,7 @@ void moveProcessToPriority(PCB* thePCB, int old_priority) {
     pq = ReadyPQ;
   }
 
-  // remove from queue
-
+  // remove from queue (many cases to consider)
   if (pq[old_priority].head == NULL) { // empty
     return; // error
   } else if (pq[old_priority].head == pq[old_priority].tail) { // 1 element
@@ -289,6 +298,10 @@ void moveProcessToPriority(PCB* thePCB, int old_priority) {
   processEnqueue(pq, thePCB);
 }
 
+/**
+ * @brief Sets process priority, then calls release_processor()
+ * @return RTX_ERR on error and RTX_OK on success
+ */
 int k_set_process_priority(int process_id, int priority){
   int i;
   int old_priority;
@@ -321,6 +334,10 @@ int k_set_process_priority(int process_id, int priority){
   return RTX_ERR;
 }
 
+/**
+ * @brief Gets process priority
+ * @return process priority
+ */
 int get_process_priority(int process_id){
   int i;
   int priority = -1;

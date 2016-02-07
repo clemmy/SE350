@@ -90,6 +90,7 @@ void memory_init(void)
   }
 }
 
+// maps the memory blocks in the heap so that each of them point to the next, and correspond to the defined BLOCK_SIZE
 void heap_init() {
   U32 block_head;
   MemBlock* memBlock;
@@ -130,6 +131,7 @@ U32 *alloc_stack(U32 size_b)
   return sp;
 }
 
+// pops an available memory block from the linked list of available memory blocks in the heap
 void *k_request_memory_block(void) {
   MemBlock* prevHead;
 
@@ -139,9 +141,6 @@ void *k_request_memory_block(void) {
 #endif /* ! DEBUG_0 */
   prevHead = memQueue.head;
 
-//   if (memQueue.head == NULL) {
-//     prevHead = NULL;
-//   } else
   while (memQueue.head == NULL) {
     makeBlock();
   }
@@ -154,16 +153,17 @@ void *k_request_memory_block(void) {
     memQueue.head = memQueue.head->next;
   }
 
-
   return (void *) prevHead;
 }
 
+// adds the specified block back into the linked list of available memory blocks in the heap
 int k_release_memory_block(void *p_mem_blk) {
   MemBlock * newTail;
 #ifdef DEBUG_0
   printf("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
 #endif /* ! DEBUG_0 */
 
+	// check that the block is BLOCK_SIZE-aligned and between start and end of the PCBS and start of the stack
   if (!(p_end <= p_mem_blk && p_mem_blk < gp_stack && ((U32)p_mem_blk - (U32)p_end) % BLOCK_SIZE == 0)) {
     return RTX_ERR;
   }

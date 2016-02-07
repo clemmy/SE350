@@ -1,4 +1,4 @@
-/** 
+/**
  * @file:   k_rtx.h
  * @brief:  kernel deinitiation and data structure header file
  * @auther: Yiqing Huang
@@ -41,12 +41,11 @@ typedef struct pcb PCB;
 
 struct pcb
 {
-  //struct pcb *mp_next;  /* next pcb, not used in this example */
   U32 *mp_sp;    /* stack pointer of the process */
   U32 m_pid;    /* process id */
-  int m_priority;
+  int m_priority; /* process priority */
   PROC_STATE_E m_state;   /* state of the process */
-  PCB* nextPCB;
+  PCB* nextPCB; /* pointer to next PCB, if PCB is in a queue */
 };
 
 /* initialization table item */
