@@ -84,7 +84,7 @@ void proc1(void){
 	uart1_put_char(totalTests + '0');
 	uart1_put_string(" tests FAIL\n\r");
 	
-	uart1_put_string("G030_test: END");
+	uart1_put_string("G030_test: END\n\r");
 	while (1);
 }
 
