@@ -1,4 +1,4 @@
-/** 
+/**
  * @file:   k_rtx_init.c
  * @brief:  Kernel initialization C file
  * @auther: Yiqing Huang
@@ -14,13 +14,13 @@
 void k_rtx_init(void)
 {
 	__disable_irq();
-	uart_irq_init(0);   // uart0, interrupt-driven 
+	uart_irq_init(0);   // uart0, interrupt-driven
 	uart1_init();       // uart1, polling
 	memory_init();
 	process_init();
 	heap_init();
 	__enable_irq();
-	
+
 	/* start the first process */
 	k_release_processor();
 }
