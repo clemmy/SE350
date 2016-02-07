@@ -18,19 +18,19 @@
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
 void set_test_procs() {
-	int i;
-	for( i = 0; i < NUM_TEST_PROCS; i++ ) {
-		g_test_procs[i].m_pid=(U32)(i+1);
-		g_test_procs[i].m_priority=MEDIUM;
-		g_test_procs[i].m_stack_size=0x400;
-	}
-  
-	g_test_procs[0].mpf_start_pc = &proc1;
-	g_test_procs[1].mpf_start_pc = &proc2;
-	g_test_procs[2].mpf_start_pc = &proc3;
-	g_test_procs[3].mpf_start_pc = &proc4;
-	g_test_procs[4].mpf_start_pc = &proc5;
-	g_test_procs[5].mpf_start_pc = &proc6;
+  int i;
+  for( i = 0; i < NUM_TEST_PROCS; i++ ) {
+    g_test_procs[i].m_pid=(U32)(i+1);
+    g_test_procs[i].m_priority=MEDIUM;
+    g_test_procs[i].m_stack_size=0x400;
+  }
+
+  g_test_procs[0].mpf_start_pc = &proc1;
+  g_test_procs[1].mpf_start_pc = &proc2;
+  g_test_procs[2].mpf_start_pc = &proc3;
+  g_test_procs[3].mpf_start_pc = &proc4;
+  g_test_procs[4].mpf_start_pc = &proc5;
+  g_test_procs[5].mpf_start_pc = &proc6;
 }
 
 
@@ -40,56 +40,56 @@ void set_test_procs() {
  */
 void proc1(void)
 {
-	int i = 0;
-	int ret_val = 10;
-	int x = 0;
-	
-	
-	//void* blocks[249];
-	
-// 	for (j = 0; ; j++) {
-// 		curBlock = request_memory_block();
-// 		if (curBlock == NULL) {
-// 			break;
-// 		}
-// 		else if ((unsigned int)curBlock >= 0x10007000) {
-// 			1+1;
-// 		}
-		
-		//printf("%x\n", &blocks[j]);
-		//blocks[j] = curBlock;
-	//}
-	
-	int j;
-	void* blocks[3];
-	
-	for (j=0;j<3;j++) {
-		blocks[j] = request_memory_block();
-	}
-	
-	for (j=2;j>=0;j--) {
-		release_memory_block(blocks[j]);
-	}
+  int i = 0;
+  int ret_val = 10;
+  int x = 0;
 
-	// curBlock = request_memory_block();
 
-	while ( 1) {
-		if ( i != 0 && i%5 == 0 ) {
-			uart1_put_string(" 1\n\r");
-			
-			if ( i%30 == 0 ) {
-				ret_val = release_processor();
+  //void* blocks[249];
+
+//   for (j = 0; ; j++) {
+//     curBlock = request_memory_block();
+//     if (curBlock == NULL) {
+//       break;
+//     }
+//     else if ((unsigned int)curBlock >= 0x10007000) {
+//       1+1;
+//     }
+
+    //printf("%x\n", &blocks[j]);
+    //blocks[j] = curBlock;
+  //}
+
+  int j;
+  void* blocks[3];
+
+  for (j=0;j<3;j++) {
+    blocks[j] = request_memory_block();
+  }
+
+  for (j=2;j>=0;j--) {
+    release_memory_block(blocks[j]);
+  }
+
+  // curBlock = request_memory_block();
+
+  while ( 1) {
+    if ( i != 0 && i%5 == 0 ) {
+      uart1_put_string(" 1\n\r");
+
+      if ( i%30 == 0 ) {
+        ret_val = release_processor();
 #ifdef DEBUG_0
-				printf("proc1: ret_val=%d\n", ret_val);
-			
+        printf("proc1: ret_val=%d\n", ret_val);
+
 #endif /* DEBUG_0 */
-			}
-			for ( x = 0; x < 100000; x++); // some artifical delay
-		}
-		uart1_put_char('A' + i%26);
-		i++;
-		
-	}
+      }
+      for ( x = 0; x < 100000; x++); // some artifical delay
+    }
+    uart1_put_char('A' + i%26);
+    i++;
+
+  }
 }
 
 /**
@@ -98,26 +98,26 @@ void proc1(void)
  */
 void proc2(void)
 {
-	int i = 0;
-	int ret_val = 20;
-	int x = 0;
-	while ( 1) {
-		if ( i != 0 && i%5 == 0 ) {
-			uart1_put_string(" 2\n\r");
-			
-			if ( i%30 == 0 ) {
-				ret_val = release_processor();
+  int i = 0;
+  int ret_val = 20;
+  int x = 0;
+  while ( 1) {
+    if ( i != 0 && i%5 == 0 ) {
+      uart1_put_string(" 2\n\r");
+
+      if ( i%30 == 0 ) {
+        ret_val = release_processor();
 #ifdef DEBUG_0
-				printf("proc2: ret_val=%d\n", ret_val);
-			
+        printf("proc2: ret_val=%d\n", ret_val);
+
 #endif /* DEBUG_0 */
-			}
-			for ( x = 0; x < 100000; x++); // some artifical delay
-		}
-		uart1_put_char('0' + i%10);
-		i++;
-		
-	}
+      }
+      for ( x = 0; x < 100000; x++); // some artifical delay
+    }
+    uart1_put_char('0' + i%10);
+    i++;
+
+  }
 }
 
 /**
@@ -126,20 +126,20 @@ void proc2(void)
  */
 void proc4(void)
 {
-	int i = 0;
-	int ret_val = 40;
-	while ( 1) {
-		if ( i != 0 && i%5 == 0 ) {
-			uart1_put_string(" 4\n\r");
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 40;
+  while ( 1) {
+    if ( i != 0 && i%5 == 0 ) {
+      uart1_put_string(" 4\n\r");
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc4: ret_val=%d\n", ret_val);
-			get_process_priority(4);
+      printf("proc4: ret_val=%d\n", ret_val);
+      get_process_priority(4);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('9' - i%10);
-		i++;
-	}
+    }
+    uart1_put_char('9' - i%10);
+    i++;
+  }
 }
 
 /**
@@ -148,20 +148,20 @@ void proc4(void)
  */
 void proc5(void)
 {
-	int i = 0;
-	int ret_val = 50;
-	while ( 1) {
-		if ( i != 0 && i%3 == 0 ) {
-			uart1_put_string(" 5\n\r");
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 50;
+  while ( 1) {
+    if ( i != 0 && i%3 == 0 ) {
+      uart1_put_string(" 5\n\r");
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc5: ret_val=%d\n", ret_val);
-			get_process_priority(5);
+      printf("proc5: ret_val=%d\n", ret_val);
+      get_process_priority(5);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('6');
-		i++;
-	}
+    }
+    uart1_put_char('6');
+    i++;
+  }
 }
 
 /**
@@ -169,20 +169,20 @@ void proc5(void)
  */
 void temp6(void)
 {
-	int i = 0;
-	int ret_val = 50;
-	while (1) {
-		if ( i != 0 && i%4 == 0 ) {
-			uart1_put_string(" 6\n\r");
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 50;
+  while (1) {
+    if ( i != 0 && i%4 == 0 ) {
+      uart1_put_string(" 6\n\r");
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc6: ret_val=%d\n", ret_val);
-			get_process_priority(6);
+      printf("proc6: ret_val=%d\n", ret_val);
+      get_process_priority(6);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('7');
-		i++;
-	}
+    }
+    uart1_put_char('7');
+    i++;
+  }
 }
 
 /**
@@ -191,21 +191,21 @@ void temp6(void)
  */
 void takeOver(void) //takeOver
 {
-	int i = 0;
-	int ret_val = 30;
-	while ( 1) {
-		if ( i != 0 && i%4 == 0 ) {
-			uart1_put_string(" 3\n\r");
-			set_process_priority(3, 0);
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 30;
+  while ( 1) {
+    if ( i != 0 && i%4 == 0 ) {
+      uart1_put_string(" 3\n\r");
+      set_process_priority(3, 0);
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc3: ret_val=%d\n", ret_val);
-			get_process_priority(3);
+      printf("proc3: ret_val=%d\n", ret_val);
+      get_process_priority(3);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('a');
-		i++;
-	}
+    }
+    uart1_put_char('a');
+    i++;
+  }
 }
 
 /**
@@ -214,22 +214,22 @@ void takeOver(void) //takeOver
  */
 void remissive(void) //remissive
 {
-	int i = 0;
-	int ret_val = 30;
-	int gpp_ret_val = 0;
-	while ( 1) {
-		if ( i != 0 && i%4 == 0 ) {
-			uart1_put_string(" 3\n\r");
-			set_process_priority(6, 2);
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 30;
+  int gpp_ret_val = 0;
+  while ( 1) {
+    if ( i != 0 && i%4 == 0 ) {
+      uart1_put_string(" 3\n\r");
+      set_process_priority(6, 2);
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc3: ret_val=%d\n", ret_val);
-			gpp_ret_val = get_process_priority(6);
+      printf("proc3: ret_val=%d\n", ret_val);
+      gpp_ret_val = get_process_priority(6);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('a');
-		i++;
-	}
+    }
+    uart1_put_char('a');
+    i++;
+  }
 }
 
 /**
@@ -237,21 +237,21 @@ void remissive(void) //remissive
  */
 void unchangeItself(void) //unchangeItself
 {
-	int i = 0;
-	int ret_val = 30;
-	while ( 1) {
-		if ( i != 0 && i%4 == 0 ) {
-			uart1_put_string(" 3\n\r");
-			set_process_priority(3, 1);
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 30;
+  while ( 1) {
+    if ( i != 0 && i%4 == 0 ) {
+      uart1_put_string(" 3\n\r");
+      set_process_priority(3, 1);
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc3: ret_val=%d\n", ret_val);
-			get_process_priority(3);
+      printf("proc3: ret_val=%d\n", ret_val);
+      get_process_priority(3);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('a');
-		i++;
-	}
+    }
+    uart1_put_char('a');
+    i++;
+  }
 }
 
 /**
@@ -260,21 +260,21 @@ void unchangeItself(void) //unchangeItself
  */
 void giveTime(void) //giveTime
 {
-	int i = 0;
-	int ret_val = 30;
-	while ( 1) {
-		if ( i != 0 && i%4 == 0 ) {
-			uart1_put_string(" 3\n\r");
-			set_process_priority(2, 0);
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 30;
+  while ( 1) {
+    if ( i != 0 && i%4 == 0 ) {
+      uart1_put_string(" 3\n\r");
+      set_process_priority(2, 0);
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc3: ret_val=%d\n", ret_val);
-			get_process_priority(3);
+      printf("proc3: ret_val=%d\n", ret_val);
+      get_process_priority(3);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('a');
-		i++;
-	}
+    }
+    uart1_put_char('a');
+    i++;
+  }
 }
 
 /**
@@ -283,21 +283,21 @@ void giveTime(void) //giveTime
  */
 void makeLame(void) //makeLame
 {
-	int i = 0;
-	int ret_val = 30;
-	while ( 1) {
-		if ( i != 0 && i%4 == 0 ) {
-			uart1_put_string(" 3\n\r");
-			set_process_priority(2, 2);
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 30;
+  while ( 1) {
+    if ( i != 0 && i%4 == 0 ) {
+      uart1_put_string(" 3\n\r");
+      set_process_priority(2, 2);
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc3: ret_val=%d\n", ret_val);
-			get_process_priority(3);
+      printf("proc3: ret_val=%d\n", ret_val);
+      get_process_priority(3);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('a');
-		i++;
-	}
+    }
+    uart1_put_char('a');
+    i++;
+  }
 }
 
 /**
@@ -305,21 +305,21 @@ void makeLame(void) //makeLame
  */
 void unchangeOther(void) //unchangeOther
 {
-	int i = 0;
-	int ret_val = 30;
-	while ( 1) {
-		if ( i != 0 && i%4 == 0 ) {
-			uart1_put_string("\n\r");
-			set_process_priority(3, 1);
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 30;
+  while ( 1) {
+    if ( i != 0 && i%4 == 0 ) {
+      uart1_put_string("\n\r");
+      set_process_priority(3, 1);
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc3: ret_val=%d\n", ret_val);
-			get_process_priority(3);
+      printf("proc3: ret_val=%d\n", ret_val);
+      get_process_priority(3);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('a');
-		i++;
-	}
+    }
+    uart1_put_char('a');
+    i++;
+  }
 }
 
 
@@ -328,10 +328,10 @@ void unchangeOther(void) //unchangeOther
  */
 void memoryHog(void) //memoryHog
 {
-	while ( 1) {
-		uart1_put_string("Eating memory!\n\r");
-		request_memory_block();
-	}
+  while ( 1) {
+    uart1_put_string("Eating memory!\n\r");
+    request_memory_block();
+  }
 }
 
 /**
@@ -340,21 +340,21 @@ void memoryHog(void) //memoryHog
  */
 void twinA(void) //twinA //proc3
 {
-	int i = 0;
-	int ret_val = 30;
-	while ( 1) {
-		if ( i != 0 && i%4 == 0 ) {
-			uart1_put_string(" 3\n\r");
-			set_process_priority(4, 0);
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 30;
+  while ( 1) {
+    if ( i != 0 && i%4 == 0 ) {
+      uart1_put_string(" 3\n\r");
+      set_process_priority(4, 0);
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc3: ret_val=%d\n", ret_val);
-			get_process_priority(3);
+      printf("proc3: ret_val=%d\n", ret_val);
+      get_process_priority(3);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('a');
-		i++;
-	}
+    }
+    uart1_put_char('a');
+    i++;
+  }
 }
 
 /**
@@ -363,21 +363,21 @@ void twinA(void) //twinA //proc3
  */
 void twinB(void) //twinB //proc4
 {
-	int i = 0;
-	int ret_val = 30;
-	while ( 1) {
-		if ( i != 0 && i%4 == 0 ) {
-			uart1_put_string(" 4\n\r");
-			set_process_priority(3, 0);
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 30;
+  while ( 1) {
+    if ( i != 0 && i%4 == 0 ) {
+      uart1_put_string(" 4\n\r");
+      set_process_priority(3, 0);
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc3: ret_val=%d\n", ret_val);
-			get_process_priority(4);
+      printf("proc3: ret_val=%d\n", ret_val);
+      get_process_priority(4);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('b');
-		i++;
-	}
+    }
+    uart1_put_char('b');
+    i++;
+  }
 }
 
 /**
@@ -386,27 +386,27 @@ void twinB(void) //twinB //proc4
  */
 void allUp(void) //allUp //proc3
 {
-	int i = 0;
-	int ret_val = 30;
-	while ( 1) {
-		if ( i != 0 && i%4 == 0 ) {
-			uart1_put_string(" 3\n\r");
-			set_process_priority(3, 0);
-			set_process_priority(1, 0);
-			set_process_priority(2, 0);
-			set_process_priority(4, 0);
-			set_process_priority(5, 0);
-			set_process_priority(6, 0);
-			set_process_priority(0, 0);
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 30;
+  while ( 1) {
+    if ( i != 0 && i%4 == 0 ) {
+      uart1_put_string(" 3\n\r");
+      set_process_priority(3, 0);
+      set_process_priority(1, 0);
+      set_process_priority(2, 0);
+      set_process_priority(4, 0);
+      set_process_priority(5, 0);
+      set_process_priority(6, 0);
+      set_process_priority(0, 0);
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc3: ret_val=%d\n", ret_val);
-			get_process_priority(3);
+      printf("proc3: ret_val=%d\n", ret_val);
+      get_process_priority(3);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('b');
-		i++;
-	}
+    }
+    uart1_put_char('b');
+    i++;
+  }
 }
 
 /**
@@ -415,27 +415,27 @@ void allUp(void) //allUp //proc3
  */
 void allDown(void) //allDown //proc3
 {
-	int i = 0;
-	int ret_val = 30;
-	while ( 1) {
-		if ( i != 0 && i%4 == 0 ) {
-			uart1_put_string(" 3\n\r");
-			set_process_priority(6, 3);
-			set_process_priority(1, 3);
-			set_process_priority(2, 3);
-			set_process_priority(4, 3);
-			set_process_priority(5, 3);
-			set_process_priority(0, 3);
-			set_process_priority(3, 3);
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 30;
+  while ( 1) {
+    if ( i != 0 && i%4 == 0 ) {
+      uart1_put_string(" 3\n\r");
+      set_process_priority(6, 3);
+      set_process_priority(1, 3);
+      set_process_priority(2, 3);
+      set_process_priority(4, 3);
+      set_process_priority(5, 3);
+      set_process_priority(0, 3);
+      set_process_priority(3, 3);
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc3: ret_val=%d\n", ret_val);
-			get_process_priority(3);
+      printf("proc3: ret_val=%d\n", ret_val);
+      get_process_priority(3);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('b');
-		i++;
-	}
+    }
+    uart1_put_char('b');
+    i++;
+  }
 }
 
 /**
@@ -444,35 +444,35 @@ void allDown(void) //allDown //proc3
  */
 void testGPP(void) //testGPP //proc3
 {
-	int i = 0;
-	int ret_val = 30;
-	int gpp = 10;
-	while ( 1) {
-		if ( i != 0 && i%4 == 0 ) {
-			uart1_put_string(" 3\n\r");
-			gpp = get_process_priority(3);
-			set_process_priority(3, 0);
-			gpp = get_process_priority(3);
-			gpp = get_process_priority(1);
-			set_process_priority(1, 0);
-			gpp = get_process_priority(1);
-			set_process_priority(2, 0);
-			set_process_priority(4, 0);
-			set_process_priority(5, 0);
-			set_process_priority(6, 0);
-			set_process_priority(0, 0);
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 30;
+  int gpp = 10;
+  while ( 1) {
+    if ( i != 0 && i%4 == 0 ) {
+      uart1_put_string(" 3\n\r");
+      gpp = get_process_priority(3);
+      set_process_priority(3, 0);
+      gpp = get_process_priority(3);
+      gpp = get_process_priority(1);
+      set_process_priority(1, 0);
+      gpp = get_process_priority(1);
+      set_process_priority(2, 0);
+      set_process_priority(4, 0);
+      set_process_priority(5, 0);
+      set_process_priority(6, 0);
+      set_process_priority(0, 0);
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc3: ret_val=%d\n", ret_val);
-			get_process_priority(3);
+      printf("proc3: ret_val=%d\n", ret_val);
+      get_process_priority(3);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('b');
-		i++;
-		if (gpp == 0){
-			set_process_priority(3, 0);
-		}
-	}
+    }
+    uart1_put_char('b');
+    i++;
+    if (gpp == 0){
+      set_process_priority(3, 0);
+    }
+  }
 }
 
 /**
@@ -480,10 +480,10 @@ void testGPP(void) //testGPP //proc3
  */
 void memoryHog1(void) //memoryHog1 //proc1
 {
-	while ( 1) {
-		uart1_put_string("Eating memory!\n\r");
-		request_memory_block();
-	}
+  while ( 1) {
+    uart1_put_string("Eating memory!\n\r");
+    request_memory_block();
+  }
 }
 
 /**
@@ -491,10 +491,10 @@ void memoryHog1(void) //memoryHog1 //proc1
  */
 void memoryHog2(void) //memoryHog2 //proc2
 {
-	while ( 1) {
-		uart1_put_string("Eating memory!\n\r");
-		request_memory_block();
-	}
+  while ( 1) {
+    uart1_put_string("Eating memory!\n\r");
+    request_memory_block();
+  }
 }
 
 /**
@@ -502,10 +502,10 @@ void memoryHog2(void) //memoryHog2 //proc2
  */
 void memoryHog3(void) //memoryHog3 //proc3
 {
-	while ( 1) {
-		uart1_put_string("Eating memory!\n\r");
-		request_memory_block();
-	}
+  while ( 1) {
+    uart1_put_string("Eating memory!\n\r");
+    request_memory_block();
+  }
 }
 
 /**
@@ -513,10 +513,10 @@ void memoryHog3(void) //memoryHog3 //proc3
  */
 void memoryHog4(void) //memoryHog4 //proc4
 {
-	while ( 1) {
-		uart1_put_string("Eating memory!\n\r");
-		request_memory_block();
-	}
+  while ( 1) {
+    uart1_put_string("Eating memory!\n\r");
+    request_memory_block();
+  }
 }
 
 /**
@@ -524,10 +524,10 @@ void memoryHog4(void) //memoryHog4 //proc4
  */
 void memoryHog5(void) //memoryHog5 //proc5
 {
-	while ( 1) {
-		uart1_put_string("Eating memory!\n\r");
-		request_memory_block();
-	}
+  while ( 1) {
+    uart1_put_string("Eating memory!\n\r");
+    request_memory_block();
+  }
 }
 
 /**
@@ -535,10 +535,10 @@ void memoryHog5(void) //memoryHog5 //proc5
  */
 void proc6(void) //memoryHog6 //proc6
 {
-	while ( 1) {
-		uart1_put_string("Eating memory!\n\r");
-		request_memory_block();
-	}
+  while ( 1) {
+    uart1_put_string("Eating memory!\n\r");
+    request_memory_block();
+  }
 }
 
 /**
@@ -546,24 +546,24 @@ void proc6(void) //memoryHog6 //proc6
  */
 void memoryNice(void) //memoryNice //proc3
 {
-	int i;
-	void* memBlocks[5];
-	
-	for (i = 0; i < 5; i++) {
-		uart1_put_string("Eating little memory!\n\r");
-		memBlocks[i] = request_memory_block();
-	}
-	
-	
-	for (i = 0; i < 5; i++) {
-		release_processor();
-		uart1_put_string("Releasing little memory!\n\r");
-		release_memory_block(memBlocks[i]);
-	}
-	
-	while ( 1) {
-		release_processor();
-	}
+  int i;
+  void* memBlocks[5];
+
+  for (i = 0; i < 5; i++) {
+    uart1_put_string("Eating little memory!\n\r");
+    memBlocks[i] = request_memory_block();
+  }
+
+
+  for (i = 0; i < 5; i++) {
+    release_processor();
+    uart1_put_string("Releasing little memory!\n\r");
+    release_memory_block(memBlocks[i]);
+  }
+
+  while ( 1) {
+    release_processor();
+  }
 }
 
 /**
@@ -571,28 +571,28 @@ void memoryNice(void) //memoryNice //proc3
  */
 void eatPukeEat(void) //eatPukeEat //proc3
 {
-	int i;
-	const int numOfBlocks = 197;
-	void* memBlocks[numOfBlocks];
-	
-	for (i = 0; i < numOfBlocks; i++) {
-		printf("Ate %d blocks\n\r", i);
-		memBlocks[i] = request_memory_block();
-	}
-	
-	for (i = 0; i < numOfBlocks; i++) {
-		printf("Spat out %d blocks\n\r", i);
-		release_memory_block(memBlocks[i]);
-	}
-	
-	for (i = 0; i < numOfBlocks; i++) {
-		printf("Ate %d blocks again\n\r", i);
-		memBlocks[i] = request_memory_block();
-	}
-	
-	while ( 1) {
-		release_processor();
-	}
+  int i;
+  const int numOfBlocks = 197;
+  void* memBlocks[numOfBlocks];
+
+  for (i = 0; i < numOfBlocks; i++) {
+    printf("Ate %d blocks\n\r", i);
+    memBlocks[i] = request_memory_block();
+  }
+
+  for (i = 0; i < numOfBlocks; i++) {
+    printf("Spat out %d blocks\n\r", i);
+    release_memory_block(memBlocks[i]);
+  }
+
+  for (i = 0; i < numOfBlocks; i++) {
+    printf("Ate %d blocks again\n\r", i);
+    memBlocks[i] = request_memory_block();
+  }
+
+  while ( 1) {
+    release_processor();
+  }
 }
 
 /**
@@ -601,21 +601,21 @@ void eatPukeEat(void) //eatPukeEat //proc3
  */
 void boostFour(void) //boostFour //proc6
 {
-	int i = 0;
-	int ret_val = 30;
-	while ( 1) {
-		if ( i != 0 && i%4 == 0 ) {
-			uart1_put_string(" 6\n\r");
-			set_process_priority(4, 0);
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 30;
+  while ( 1) {
+    if ( i != 0 && i%4 == 0 ) {
+      uart1_put_string(" 6\n\r");
+      set_process_priority(4, 0);
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc3: ret_val=%d\n", ret_val);
-			get_process_priority(6);
+      printf("proc3: ret_val=%d\n", ret_val);
+      get_process_priority(6);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('a');
-		i++;
-	}
+    }
+    uart1_put_char('a');
+    i++;
+  }
 }
 
 /**
@@ -624,21 +624,21 @@ void boostFour(void) //boostFour //proc6
  */
 void boostThree(void) //boostThree //proc6
 {
-	int i = 0;
-	int ret_val = 30;
-	while ( 1) {
-		if ( i != 0 && i%4 == 0 ) {
-			uart1_put_string(" 6\n\r");
-			set_process_priority(3, 0);
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 30;
+  while ( 1) {
+    if ( i != 0 && i%4 == 0 ) {
+      uart1_put_string(" 6\n\r");
+      set_process_priority(3, 0);
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc3: ret_val=%d\n", ret_val);
-			get_process_priority(6);
+      printf("proc3: ret_val=%d\n", ret_val);
+      get_process_priority(6);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('a');
-		i++;
-	}
+    }
+    uart1_put_char('a');
+    i++;
+  }
 }
 
 /**
@@ -647,44 +647,43 @@ void boostThree(void) //boostThree //proc6
  */
 void boostFive(void) //boostFive //proc6
 {
-	int i = 0;
-	int ret_val = 30;
-	while ( 1) {
-		if ( i != 0 && i%4 == 0 ) {
-			uart1_put_string(" 6\n\r");
-			set_process_priority(5, 0);
-			ret_val = release_processor();
+  int i = 0;
+  int ret_val = 30;
+  while ( 1) {
+    if ( i != 0 && i%4 == 0 ) {
+      uart1_put_string(" 6\n\r");
+      set_process_priority(5, 0);
+      ret_val = release_processor();
 #ifdef DEBUG_0
-			printf("proc3: ret_val=%d\n", ret_val);
-			get_process_priority(6);
+      printf("proc3: ret_val=%d\n", ret_val);
+      get_process_priority(6);
 #endif /* DEBUG_0 */
-		}
-		uart1_put_char('a');
-		i++;
-	}
+    }
+    uart1_put_char('a');
+    i++;
+  }
 }
 
 /**
  * @brief: a process that eats up all the memory, then it releases processor.
- * Then on the next run, it releases a bit of memory so that a blocked process 
+ * Then on the next run, it releases a bit of memory so that a blocked process
  * is put on the ready q. Then it requests that memory back, and releases processor.
  */
 void proc3(void) //danglingCarrot //proc3
 {
-	void* memoryBlock = request_memory_block();
-	release_processor();
-	set_process_priority(6, 3);
-	release_memory_block(memoryBlock);
-	//memoryBlock = request_memory_block();
-	set_process_priority(6, 0);
-	
-	set_process_priority(6, 3);
-	release_memory_block(memoryBlock);
-	memoryBlock = request_memory_block();
-	set_process_priority(6, 0);
-	
-	while(1) {
-		release_processor();
-	}
-}
+  void* memoryBlock = request_memory_block();
+  release_processor();
+  set_process_priority(6, 3);
+  release_memory_block(memoryBlock);
+  //memoryBlock = request_memory_block();
+  set_process_priority(6, 0);
 
+  set_process_priority(6, 3);
+  release_memory_block(memoryBlock);
+  memoryBlock = request_memory_block();
+  set_process_priority(6, 0);
+
+  while(1) {
+    release_processor();
+  }
+}

@@ -8,7 +8,7 @@
  *       taken from http://www.sparetimelabs.com/tinyprintf/tinyprintf.php
  *       is configured to use UART0 to output when DEBUG_0 is defined.
  *       Check target option->C/C++ to see the DEBUG_0 definition.
- *       Note that init_printf(NULL, putc) must be called to initialize 
+ *       Note that init_printf(NULL, putc) must be called to initialize
  *       the printf function.
  */
 
@@ -24,18 +24,18 @@
 //DELETE NO_CRP UNDER ASM TAB IN TARGET OPTIONS
 //(also try downloading to Flash memory on a different profile)
 
-int main() 
-{	
-	/* CMSIS system initialization */
-	SystemInit(); 
+int main()
+{
+  /* CMSIS system initialization */
+  SystemInit();
 #ifdef DEBUG_0
-	init_printf(NULL, putc);
+  init_printf(NULL, putc);
 #endif /* DEBUG_0 */
-	/* start the RTX and built-in processes */
-	rtx_init();  
-	
-	
-  
-	/* We should never reach here!!! */
-	return RTX_ERR;  
+  /* start the RTX and built-in processes */
+  rtx_init();
+
+
+
+  /* We should never reach here!!! */
+  return RTX_ERR;
 }

@@ -20,8 +20,8 @@
 
 typedef struct PCBQ PCBQ;
 struct PCBQ {
-		PCB* head;
-		PCB* tail;
+    PCB* head;
+    PCB* tail;
 };
 
 /* ----- Global Variables ----- */
@@ -34,7 +34,7 @@ void process_init(void);               /* initialize all procs in the system */
 PCB *scheduler(void);                  /* pick the pid of the next to run process */
 int k_release_processor(void);           /* kernel release_process function */
 int set_process_priority(int process_id, int priority); /* sets priority of this process to this priority */
-int get_process_priority(int process_id);								/* returns the priority of the specified process. Returns -1 if failed */
+int get_process_priority(int process_id);                /* returns the priority of the specified process. Returns -1 if failed */
 void nullProc(void);
 
 
