@@ -136,8 +136,6 @@ U32 *alloc_stack(U32 size_b)
 void *k_request_memory_block(void) {
   MemBlock* prevHead;
 
-	__disable_irq();
-
 #ifdef DEBUG_0
   printf("k_request_memory_block: entering...\n");
 #endif /* ! DEBUG_0 */
@@ -155,8 +153,6 @@ void *k_request_memory_block(void) {
     memQueue.head = memQueue.head->next;
   }
 	
-	__enable_irq();
-
   return (void *) prevHead + sizeof(envelope);
 }
 
