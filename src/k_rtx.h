@@ -8,6 +8,8 @@
 #ifndef K_RTX_H_
 #define K_RTX_H_
 
+#include "k_message.h";
+
 /*----- Definitations -----*/
 
 #define RTX_ERR -1
@@ -30,7 +32,7 @@ typedef unsigned char U8;
 typedef unsigned int U32;
 
 /* process states, note we only assume three states in this example */
-typedef enum {NEW = 0, RDY, RUN, BLK} PROC_STATE_E;
+typedef enum {NEW = 0, RDY, RUN, BLK, WAIT} PROC_STATE_E;
 
 /*
   PCB data structure definition.
@@ -46,6 +48,8 @@ struct pcb
   int m_priority; /* process priority */
   PROC_STATE_E m_state;   /* state of the process */
   PCB* nextPCB; /* pointer to next PCB, if PCB is in a queue */
+	envelope* msgHead;
+	envelope* msgTail;
 };
 
 /* initialization table item */

@@ -7,6 +7,7 @@
 
 #include "k_memory.h"
 #include "k_process.h"
+#include "k_message.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -135,6 +136,7 @@ U32 *alloc_stack(U32 size_b)
 void *k_request_memory_block(void) {
   MemBlock* prevHead;
 
+	__disable_irq();
 
 #ifdef DEBUG_0
   printf("k_request_memory_block: entering...\n");
@@ -152,13 +154,18 @@ void *k_request_memory_block(void) {
   else {
     memQueue.head = memQueue.head->next;
   }
+	
+	__enable_irq();
 
-  return (void *) prevHead;
+  return (void *) prevHead + sizeof(envelope);
 }
 
 // adds the specified block back into the linked list of available memory blocks in the heap
 int k_release_memory_block(void *p_mem_blk) {
   MemBlock * newTail;
+	
+	p_mem_blk -= sizeof(envelope);
+	
 #ifdef DEBUG_0
   printf("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);
 #endif /* ! DEBUG_0 */
