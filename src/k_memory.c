@@ -153,14 +153,14 @@ void *k_request_memory_block(void) {
     memQueue.head = memQueue.head->next;
   }
 	
-  return (void *) prevHead + sizeof(envelope);
+  return (void *) ((envelope*) prevHead + 1);
 }
 
 // adds the specified block back into the linked list of available memory blocks in the heap
 int k_release_memory_block(void *p_mem_blk) {
   MemBlock * newTail;
 	
-	p_mem_blk -= sizeof(envelope);
+	p_mem_blk = (void*) ((envelope*) p_mem_blk - 1);
 	
 #ifdef DEBUG_0
   printf("k_release_memory_block: releasing block @ 0x%x\n", p_mem_blk);

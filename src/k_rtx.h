@@ -8,7 +8,7 @@
 #ifndef K_RTX_H_
 #define K_RTX_H_
 
-#include "k_message.h";
+// #include "k_message.h"
 
 /*----- Definitations -----*/
 
@@ -30,6 +30,9 @@
 /*----- Types -----*/
 typedef unsigned char U8;
 typedef unsigned int U32;
+
+/*---- Forward Declarations ----*/
+typedef struct _envelope envelope;
 
 /* process states, note we only assume three states in this example */
 typedef enum {NEW = 0, RDY, RUN, BLK, WAIT} PROC_STATE_E;

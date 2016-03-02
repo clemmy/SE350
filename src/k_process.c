@@ -137,6 +137,8 @@ void process_init()
     g_proc_table[i].m_stack_size = g_test_procs[i-1].m_stack_size;
     g_proc_table[i].mpf_start_pc = g_test_procs[i-1].mpf_start_pc;
   }
+	
+	
 
   /* initialize exception stack frame (i.e. initial context) for each process */
   for ( i = 0; i < NUM_PROCS; i++ ) {
@@ -186,7 +188,7 @@ PCB *scheduler(void)
     if (gp_current_process->m_state == BLK){
       processEnqueue(BlockPQ, gp_current_process);
     }
-    else {
+    else if (gp_current_process->m_state == RDY) {
       processEnqueue(ReadyPQ, gp_current_process);
     }
   }

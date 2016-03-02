@@ -1,8 +1,18 @@
 #ifndef K_MESSAGE_H_
 #define K_MESSAGE_H_
 
-#include "rtx.h"
-// gets MSG_BUF struct
+// #include "k_rtx.h"
+
+/* ---- Forward Declarations ---- */
+typedef struct pcb PCB;
+typedef struct PCBQ PCBQ;
+
+/* message buffer */
+typedef struct msgbuf
+{
+	int mtype;              /* user defined message type */
+	char mtext[1];          /* body of the message */
+} MSG_BUF;
 
 
 typedef struct _envelope envelope;
@@ -14,7 +24,7 @@ struct _envelope {
 
 extern PCB **gp_pcbs;
 extern PCB *gp_current_process;
-extern PCBQ ReadyPQ[NUM_OF_PRIORITIES];
+extern PCBQ ReadyPQ[];
 
 
 int k_send_message(int process_id, void* message_envelope);

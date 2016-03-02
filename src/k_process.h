@@ -36,7 +36,7 @@ int k_release_processor(void);           /* kernel release_process function */
 int set_process_priority(int process_id, int priority); /* sets priority of this process to this priority */
 int get_process_priority(int process_id);                /* returns the priority of the specified process. Returns -1 if failed */
 void nullProc(void);
-
+void processEnqueue(PCBQ pq[], PCB* thePCB);
 
 extern U32 *alloc_stack(U32 size_b);   /* allocate stack for a process */
 extern void __rte(void);               /* pop exception stack frame */

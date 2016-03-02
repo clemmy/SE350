@@ -1,4 +1,6 @@
 #include "k_message.h"
+#include "k_rtx.h"
+#include "k_process.h"
 
 
 int k_send_message(int process_id, void* message_envelope) {
@@ -7,12 +9,12 @@ int k_send_message(int process_id, void* message_envelope) {
 	envelope* env;
 	
 	
-	env = (envelope*) (message_envelope - sizeof(envelope));
+	env = (envelope*) message_envelope - 1;
 	env->next = NULL;
 	env->sender_id = gp_current_process->m_pid;
 	env->recv_id = process_id;
 	
-	thePCB = gp_pcbs[recv_id];
+	thePCB = gp_pcbs[env->recv_id];
 	
 	if (thePCB->msgTail == NULL) {
 		thePCB->msgHead = env;
@@ -39,9 +41,25 @@ int k_send_message(int process_id, void* message_envelope) {
 }
 
 void* k_receive_message(int* sender_id) {
+	PCB* thePCB = gp_current_process;
+	while (thePCB->msgHead == NULL) {
+		thePCB->m_state = WAIT;
+		k_release_processor();
+	}
 	
+	envelope* envelope = thePCB->msgHead;
+	
+	if (thePCB->msgHead == thePCB->msgTail) {
+    thePCB->msgHead = NULL;
+    thePCB->msgTail = NULL;
+  }
+  else {
+    thePCB->msgHead = thePCB->msgHead->next;
+  }
+	*sender_id = envelope->sender_id;
+	return (void*) (envelope + 1);
 }
 
-int* k_delayed_send(int process_id, void* message_envelope, int delay) {
-	
-}
+// int* k_delayed_send(int process_id, void* message_envelope, int delay) {
+// 	
+// }

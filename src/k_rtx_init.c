@@ -10,10 +10,12 @@
 #include "uart.h"
 #include "k_memory.h"
 #include "k_process.h"
+#include "timer.h"
 
 void k_rtx_init(void)
 {
 	__disable_irq();
+	//timer_init(0);
 	uart_irq_init(0);   // uart0, interrupt-driven
 	uart1_init();       // uart1, polling
 	memory_init();
