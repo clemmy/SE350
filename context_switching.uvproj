@@ -452,14 +452,9 @@
               <FilePath>.\src\k_process.c</FilePath>
             </File>
             <File>
-              <FileName>queue.c</FileName>
+              <FileName>k_message.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\src\queue.c</FilePath>
-            </File>
-            <File>
-              <FileName>queue.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\src\queue.h</FilePath>
+              <FilePath>.\src\k_message.c</FilePath>
             </File>
           </Files>
         </Group>
