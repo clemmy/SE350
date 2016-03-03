@@ -211,7 +211,7 @@ int process_switch(PCB *p_pcb_old)
 
   if (state == NEW) {
     if (gp_current_process != p_pcb_old && p_pcb_old->m_state != NEW) {
-      if (p_pcb_old->m_state != BLK){
+      if (p_pcb_old->m_state != BLK && p_pcb_old->m_state != WAIT){
         p_pcb_old->m_state = RDY;
       }
       p_pcb_old->mp_sp = (U32 *) __get_MSP();
@@ -224,7 +224,7 @@ int process_switch(PCB *p_pcb_old)
   /* The following will only execute if the if block above is FALSE */
   if (gp_current_process != p_pcb_old) {
     if (state == RDY){
-      if (p_pcb_old->m_state != BLK){
+      if (p_pcb_old->m_state != BLK && p_pcb_old->m_state != WAIT){
         p_pcb_old->m_state = RDY;
       }
       p_pcb_old->mp_sp = (U32 *) __get_MSP(); // save the old process's sp
