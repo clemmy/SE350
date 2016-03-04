@@ -13,13 +13,15 @@
 #endif
 
 
-uint8_t g_buffer[]= "You Typed a Q\n\r";
+const uint8_t BUFFER_SIZE = 128;
+uint8_t g_buffer[BUFFER_SIZE];
+uint8_t g_buffer_end = 0;
 uint8_t *gp_buffer = g_buffer;
 uint8_t g_send_char = 0;
 uint8_t g_char_in;
 uint8_t g_char_out;
 
-extern uint32_t g_switch_flag;
+//extern uint32_t g_switch_flag;
 
 extern int k_release_processor(void);
 /**
@@ -168,13 +170,13 @@ __asm void UART0_IRQHandler(void)
 	IMPORT k_release_processor
 	PUSH{r4-r11, lr}
 	BL c_UART0_IRQHandler
-	LDR R4, =__cpp(&g_switch_flag)
-	LDR R4, [R4]
-	MOV R5, #0     
-	CMP R4, R5
-	BEQ  RESTORE    ; if g_switch_flag == 0, then restore the process that was interrupted
+	;LDR R4, =__cpp(&g_switch_flag)
+	;LDR R4, [R4]
+	;MOV R5, #0     
+	;CMP R4, R5
+	;BEQ  RESTORE    ; if g_switch_flag == 0, then restore the process that was interrupted
 	BL k_release_processor  ; otherwise (i.e g_switch_flag == 1, then switch to the other process)
-RESTORE
+;RESTORE
 	POP{r4-r11, pc}
 } 
 /**
@@ -204,7 +206,6 @@ void c_UART0_IRQHandler(void)
 		
 		/* setting the g_switch_flag */
 		if ( g_char_in == 'S' ) {
-		//if ( 1 ){
 			g_switch_flag = 1; 
 		} else {
 			g_switch_flag = 0;
@@ -224,7 +225,7 @@ void c_UART0_IRQHandler(void)
 			printf("Writing a char = %c \n\r", g_char_out);
 #endif // DEBUG_0			
 			pUart->THR = g_char_out;
-			gp_buffer++;
+			gp_buffer = (gp_buffer + 1) % BUFFER_SIZE;
 		} else {
 #ifdef DEBUG_0
 			uart1_put_string("Finish writing. Turning off IER_THRE\n\r");
@@ -232,7 +233,8 @@ void c_UART0_IRQHandler(void)
 			pUart->IER ^= IER_THRE; // toggle the IER_THRE bit 
 			pUart->THR = '\0';
 			g_send_char = 0;
-			gp_buffer = g_buffer;		
+			gp_buffer = g_buffer; // reset gp_buffer to beginning of buffer
+			g_buffer_end = 0; // reset g_buffer_end to beginning of buffer
 		}
 	      
 	} else {  /* not implemented yet */
