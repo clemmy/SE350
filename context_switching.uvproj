@@ -466,6 +466,16 @@
               <FileType>5</FileType>
               <FilePath>.\src\timer.h</FilePath>
             </File>
+            <File>
+              <FileName>consoleio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\consoleio.c</FilePath>
+            </File>
+            <File>
+              <FileName>wall_clock.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\wall_clock.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

@@ -64,5 +64,13 @@ void kcdProc() {
 }
 
 void crtProc() {
+    while (1) {
+        int sender_id;
+        MSG_BUF *msg = (MSG_BUF *) receive_message(&sender_id);
+        char* string = msg->mtext;
 
+        // TODO print string using UART interrupt process
+
+        release_memory_block((void*) msg);
+    }
 }
