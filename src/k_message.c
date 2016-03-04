@@ -60,6 +60,6 @@ void* k_receive_message(int* sender_id) {
 	return (void*) (envelope + 1);
 }
 
-// int* k_delayed_send(int process_id, void* message_envelope, int delay) {
-// 	
-// }
+int k_delayed_send(int process_id, void* message_envelope, int delay) {
+
+}
