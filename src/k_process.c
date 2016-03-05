@@ -17,6 +17,9 @@
 #include <system_LPC17xx.h>
 #include "uart_polling.h"
 #include "k_process.h"
+#include "k_rtx.h"
+#include "timer.h"
+#include "k_message.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -374,3 +377,24 @@ void nullProc(void)
     ret_val = k_release_processor();
   }
 }
+
+/**
+ * @brief: a process that
+ *         handles delayed sends
+ */
+void timer_i_process(void)
+{
+	envelope* env;
+	int* done = 0;
+  while (!done){
+		env = timer_receive_message(done);
+		//place envelope in queue sorted by send time
+		timer_insert(env);
+	}
+	//send messages in queue that have expired
+	while (message_ready()){
+		env = timer_dequeue();
+		
+	}
+}
+

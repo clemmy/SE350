@@ -20,6 +20,7 @@ struct _envelope {
 	envelope* next;
 	int sender_id;
 	int recv_id;
+	int send_time;
 };
 
 extern PCB **gp_pcbs;
@@ -28,9 +29,10 @@ extern PCBQ ReadyPQ[];
 
 
 int k_send_message(int process_id, void* message_envelope);
-
+//int k_has_message(int process_id);
+int timer_send_message(envelope* env);
+envelope* timer_receive_message(int* done);
 void* k_receive_message(int* sender_id);
-
 int k_delayed_send(int process_id, void* message_envelope, int delay);
 
 

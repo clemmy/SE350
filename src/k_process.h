@@ -16,7 +16,8 @@
 
 #define INITIAL_xPSR 0x01000000        /* user process initial xPSR value */
 #define NUM_OF_PRIORITIES 5
-
+#define TIMER_ID 7
+#define TIMER_PCB gp_pcbs[TIMER_ID]
 
 typedef struct PCBQ PCBQ;
 struct PCBQ {
@@ -44,5 +45,6 @@ extern void set_test_procs(void);      /* test process initial set up */
 extern void makeBlock(void);					/* Sets state of current process to blocked */
 extern void makeReady(void);					/* Transfers the highest priority PCB from the block queue to the ready queue*/
 extern int blockPQIsEmpty(void);
+extern void timer_i_process(void);
 
 #endif
