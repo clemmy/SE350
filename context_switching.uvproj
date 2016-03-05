@@ -476,6 +476,11 @@
               <FileType>1</FileType>
               <FilePath>.\src\wall_clock.c</FilePath>
             </File>
+            <File>
+              <FileName>sys_procs.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\sys_procs.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

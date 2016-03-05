@@ -8,18 +8,25 @@
 #include <LPC17xx.h>
 #include "uart.h"
 #include "uart_polling.h"
+#include "k_message.h"
+#include "k_memory.h"
+
 #ifdef DEBUG_0
 #include "printf.h"
 #endif
 
 
-uint8_t g_buffer[]= "You Typed a Q\n\r";
+const uint8_t BUFFER_SIZE = 128;
+uint8_t g_buffer[BUFFER_SIZE];
+uint8_t g_buffer_end = 0;
 uint8_t *gp_buffer = g_buffer;
-uint8_t g_send_char = 0;
 uint8_t g_char_in;
 uint8_t g_char_out;
 
-extern uint32_t g_switch_flag;
+MSG_BUF* cur_msg = NULL;
+int msg_str_index = 0;
+
+//extern uint32_t g_switch_flag;
 
 extern int k_release_processor(void);
 /**
@@ -168,13 +175,13 @@ __asm void UART0_IRQHandler(void)
 	IMPORT k_release_processor
 	PUSH{r4-r11, lr}
 	BL c_UART0_IRQHandler
-	LDR R4, =__cpp(&g_switch_flag)
-	LDR R4, [R4]
-	MOV R5, #0     
-	CMP R4, R5
-	BEQ  RESTORE    ; if g_switch_flag == 0, then restore the process that was interrupted
+	;LDR R4, =__cpp(&g_switch_flag)
+	;LDR R4, [R4]
+	;MOV R5, #0     
+	;CMP R4, R5
+	;BEQ  RESTORE    ; if g_switch_flag == 0, then restore the process that was interrupted
 	BL k_release_processor  ; otherwise (i.e g_switch_flag == 1, then switch to the other process)
-RESTORE
+;RESTORE
 	POP{r4-r11, pc}
 } 
 /**
@@ -199,15 +206,29 @@ void c_UART0_IRQHandler(void)
 		uart1_put_char(g_char_in);
 		uart1_put_string("\n\r");
 #endif // DEBUG_0
-		g_buffer[12] = g_char_in; // nasty hack
-		g_send_char = 1;
 		
-		/* setting the g_switch_flag */
-		if ( g_char_in == 'S' ) {
-		//if ( 1 ){
-			g_switch_flag = 1; 
-		} else {
-			g_switch_flag = 0;
+		if (cur_msg == NULL) {
+			cur_msg = (MSG_BUF*) k_request_memory_block_non_blocking();
+			// no more memory, return
+			if (cur_msg == NULL) {
+				return;
+			}
+			msg_str_index = 0;
+		}
+		
+		cur_msg->mtext[msg_str_index] = g_char_in;
+		msg_str_index++;
+		
+		// if reached newline or if mtext out of space, send message
+		if (g_char_in == '\n' || msg_str_index > (BLOCK_SIZE - sizeof(envelope) - sizeof(MSG_BUF) - 10)) {
+			MSG_BUF* copy = cur_msg;
+			cur_msg = NULL;
+			msg_str_index = 0;
+			
+			copy->mtext[msg_str_index] = '\0';
+			copy->mtype = DEFAULT;
+			
+			k_send_message_non_blocking(PID_KCD, copy);
 		}
 	} else if (IIR_IntId & IIR_THRE) {
 	/* THRE Interrupt, transmit holding register becomes empty */
@@ -224,15 +245,15 @@ void c_UART0_IRQHandler(void)
 			printf("Writing a char = %c \n\r", g_char_out);
 #endif // DEBUG_0			
 			pUart->THR = g_char_out;
-			gp_buffer++;
+			gp_buffer = (gp_buffer + 1 - g_buffer) % BUFFER_SIZE + g_buffer;
 		} else {
 #ifdef DEBUG_0
 			uart1_put_string("Finish writing. Turning off IER_THRE\n\r");
 #endif // DEBUG_0
 			pUart->IER ^= IER_THRE; // toggle the IER_THRE bit 
 			pUart->THR = '\0';
-			g_send_char = 0;
-			gp_buffer = g_buffer;		
+			gp_buffer = g_buffer; // reset gp_buffer to beginning of buffer
+			g_buffer_end = 0; // reset g_buffer_end to beginning of buffer
 		}
 	      
 	} else {  /* not implemented yet */
@@ -242,3 +263,9 @@ void c_UART0_IRQHandler(void)
 		return;
 	}	
 }
+
+void enable_UART_transmit(void) {
+	LPC_UART_TypeDef *pUart = (LPC_UART_TypeDef *)LPC_UART0;
+	pUart->IER = IER_RBR | IER_THRE | IER_RLS; 
+}
+

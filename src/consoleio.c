@@ -1,4 +1,11 @@
+#include <LPC17xx.h>
 #include "rtx.h"
+
+extern uint8_t *gp_buffer;
+extern const uint8_t BUFFER_SIZE;
+extern uint8_t g_buffer[];
+extern uint8_t g_buffer_end;
+extern void enable_UART_transmit(void);
 
 void copyStr(char* src, char* dest) {
     while (1) {
@@ -63,14 +70,28 @@ void kcdProc() {
     }
 }
 
+void copyToBuffer(char* string) {
+	for (int i = 0; string[i] != '\0'; i++, g_buffer_end = (g_buffer_end + 1) % BUFFER_SIZE) {
+		g_buffer[g_buffer_end] = string[i];
+	}
+	g_buffer[g_buffer_end] = '\0';	
+}
+
+
 void crtProc() {
     while (1) {
         int sender_id;
         MSG_BUF *msg = (MSG_BUF *) receive_message(&sender_id);
         char* string = msg->mtext;
 
-        // TODO print string using UART interrupt process
+        // print string using UART interrupt process
+				copyToBuffer(string);
+				
+				// enable transmit interrupts				
+				enable_UART_transmit();
 
         release_memory_block((void*) msg);
     }
 }
+
+

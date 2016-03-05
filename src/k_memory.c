@@ -156,6 +156,29 @@ void *k_request_memory_block(void) {
   return (void *) ((envelope*) prevHead + 1);
 }
 
+void *k_request_memory_block_non_blocking(void) {
+  MemBlock* prevHead;
+
+#ifdef DEBUG_0
+  printf("k_request_memory_block_non_blocking: entering...\n");
+#endif /* ! DEBUG_0 */
+  prevHead = memQueue.head;
+
+  if (memQueue.head == NULL) {
+    return NULL;
+  }
+
+  if (memQueue.head == memQueue.tail) {
+    memQueue.tail = NULL;
+    memQueue.head = NULL;
+  }
+  else {
+    memQueue.head = memQueue.head->next;
+  }
+	
+  return (void *) ((envelope*) prevHead + 1);
+}
+
 // adds the specified block back into the linked list of available memory blocks in the heap
 int k_release_memory_block(void *p_mem_blk) {
   MemBlock * newTail;

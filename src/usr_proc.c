@@ -64,7 +64,7 @@ void proc1(void) {
 	msg->mtext[1] = 'i';
 	msg->mtext[2] = '\0';
 	
-	send_message(2, msg);
+	send_message(PID_CRT, msg);
 	
 	while(1) {
 		release_processor();
