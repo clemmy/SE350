@@ -14,15 +14,15 @@
 #define BIT(X) (1<<X)
 
 volatile uint32_t g_timer_count = 0; // increment every 1 ms
-timerQ* Q;
+timerQ Q;
 
 /**
  * @brief: initialize timer. Only timer 0 is supported
  */
 uint32_t timer_init(uint8_t n_timer) 
 {
-	Q->head = NULL;
-	Q->tail = NULL;
+	Q.head = NULL;
+	Q.tail = NULL;
 	
 	LPC_TIM_TypeDef *pTimer;
 	if (n_timer == 0) {
@@ -107,13 +107,13 @@ uint32_t timer_init(uint8_t n_timer)
 __asm void TIMER0_IRQHandler(void)
 {
 	PRESERVE8
-	//BL __disable_irq
-	IMPORT c_TIMER0_IRQHandler`
+	;BL __disable_irq
+	IMPORT c_TIMER0_IRQHandler
 	PUSH{r4-r11, lr}
 	BL c_TIMER0_IRQHandler
 	POP{r4-r11}
 	IMPORT k_release_processor
-	//BL __enable_irq
+	;BL __enable_irq
 	BL k_release_processor
 }
 
@@ -142,19 +142,19 @@ uint32_t get_time(void)
 void timer_insert(envelope* env)
 {
 	//iterate, insert envelope when the next envelope's send time is later
-	envelope* curr = Q->head;
+	envelope* curr = Q.head;
 	envelope* next = curr->next;
 
 	//case when queue is empty
 	if (curr == NULL){
-		Q->head = env;
-		Q->tail = env;
+		Q.head = env;
+		Q.tail = env;
 		env->next = NULL;
 		return;
 	}
 	//case when inserting at the front
 	if (env->send_time <= curr->send_time){
-		Q->head = env;
+		Q.head = env;
 		env->next = curr;
 		return;
 	}
@@ -163,13 +163,13 @@ void timer_insert(envelope* env)
 		if (next == NULL){
 			curr->next = env;
 			env->next = NULL;
-			Q->tail = env;
-			return;
+			Q.tail = env;
+			break;
 		}
 		if (env->send_time <= next->send_time){
 			curr->next = env;
 			env->next = next;
-			return;
+			break;
 		}
 		curr = next;
 		next = curr->next;
@@ -182,12 +182,12 @@ void timer_insert(envelope* env)
 envelope* timer_dequeue( void )
 {
 	//standard dequeue
-	envelope* env = Q->head;
-	Q->head = env->next;
+	envelope* env = Q.head;
+	Q.head = env->next;
 	env->next = NULL;
 	
-	if (Q->head == NULL){
-		Q->tail = NULL;
+	if (Q.head == NULL){
+		Q.tail = NULL;
 	}
 	
 	return env;
@@ -200,10 +200,8 @@ int message_ready( void )
 {
 	//Returns 1 if the first message on a queue exists and has a send time
 	//earlier than current time
-	if (Q->head != NULL){
-		if (Q->head->send_time < get_time()){
-			return 1;
-		}
+	if (Q.head != NULL && Q.head->send_time < get_time()){
+		return 1;
 	}
 	return 0;
 }

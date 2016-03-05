@@ -385,16 +385,18 @@ void nullProc(void)
 void timer_i_process(void)
 {
 	envelope* env;
-	int* done = 0;
-  while (!done){
-		env = timer_receive_message(done);
+  while (1){
+		env = timer_receive_message();
+		if (env == NULL) {
+			break;
+		}
 		//place envelope in queue sorted by send time
 		timer_insert(env);
 	}
 	//send messages in queue that have expired
 	while (message_ready()){
 		env = timer_dequeue();
-		
+		timer_send_message(env);
 	}
 }
 

@@ -83,13 +83,12 @@ int timer_send_message(envelope* env) {
 	
 }
 
-envelope* timer_receive_message(int* done) {
-	if (TIMER_PCB->msgHead == NULL) {
-		*done = 1;
+envelope* timer_receive_message() {
+	envelope* envelope = TIMER_PCB->msgHead;
+	
+	if (envelope == NULL) {
 		return NULL;
 	}
-	
-	envelope* envelope = TIMER_PCB->msgHead;
 	
 	if (TIMER_PCB->msgHead == TIMER_PCB->msgTail) {
     TIMER_PCB->msgHead = NULL;
