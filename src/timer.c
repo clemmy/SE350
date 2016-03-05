@@ -125,7 +125,21 @@ void c_TIMER0_IRQHandler(void)
 	/* ack inttrupt, see section  21.6.1 on pg 493 of LPC17XX_UM */
 	LPC_TIM0->IR = BIT(0);  
 	g_timer_count++;
-	timer_i_process();
+	
+	envelope* env;
+  while (1){
+		env = timer_receive_message();
+		if (env == NULL) {
+			break;
+		}
+		//place envelope in queue sorted by send time
+		timer_insert(env);
+	}
+	//send messages in queue that have expired
+	while (message_ready()){
+		env = timer_dequeue();
+		timer_send_message(env);
+	}
 }
 
 /**
@@ -200,8 +214,5 @@ int message_ready( void )
 {
 	//Returns 1 if the first message on a queue exists and has a send time
 	//earlier than current time
-	if (Q.head != NULL && Q.head->send_time < get_time()){
-		return 1;
-	}
-	return 0;
+	return Q.head != NULL && Q.head->send_time < get_time();
 }

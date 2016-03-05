@@ -40,6 +40,17 @@ U32 g_switch_flag = 0;          /* whether to continue to run the process before
 /* process initialization table */
 PROC_INIT g_proc_table[NUM_PROCS];
 
+extern void procA(void);
+extern void procB(void);
+extern void procC(void);
+extern void setPriorityProc(void);
+extern void wallClockProc(void);
+extern void kcdProc(void);
+extern void crtProc(void);
+extern void TIMER0_IRQHandler(void);
+extern void UART0_IRQHandler(void);
+
+
 /**
  * @brief: Enqueues the PCB into its corresponding queue (based on priority)
  */
@@ -129,19 +140,63 @@ void process_init()
   /* fill out the initialization table */
   set_test_procs();
 
-  g_proc_table[0].m_pid = 0;
-  g_proc_table[0].m_priority = NULL_PRIORITY;
-  g_proc_table[0].m_stack_size = 0x100;
-  g_proc_table[0].mpf_start_pc = &nullProc;
+  g_proc_table[PID_NULL].m_pid = PID_NULL;
+  g_proc_table[PID_NULL].m_priority = NULL_PRIORITY;
+  g_proc_table[PID_NULL].m_stack_size = 0x100;
+  g_proc_table[PID_NULL].mpf_start_pc = &nullProc;
 
-  for ( i = 1; i < NUM_PROCS; i++ ) {
+	// init test processes
+  for ( i = 1; i < NUM_TEST_PROCS; i++ ) {
     g_proc_table[i].m_pid = g_test_procs[i-1].m_pid;
     g_proc_table[i].m_priority = g_test_procs[i-1].m_priority;
     g_proc_table[i].m_stack_size = g_test_procs[i-1].m_stack_size;
     g_proc_table[i].mpf_start_pc = g_test_procs[i-1].mpf_start_pc;
   }
 	
+	g_proc_table[PID_A].m_pid = PID_A;
+  g_proc_table[PID_A].m_priority = LOW;
+  g_proc_table[PID_A].m_stack_size = 0x100;
+  g_proc_table[PID_A].mpf_start_pc = &procA;
 	
+	g_proc_table[PID_B].m_pid = PID_B;
+  g_proc_table[PID_B].m_priority = LOW;
+  g_proc_table[PID_B].m_stack_size = 0x100;
+  g_proc_table[PID_B].mpf_start_pc = &procB;
+	
+	g_proc_table[PID_C].m_pid = PID_C;
+  g_proc_table[PID_C].m_priority = LOW;
+  g_proc_table[PID_C].m_stack_size = 0x100;
+  g_proc_table[PID_C].mpf_start_pc = &procC;
+	
+	g_proc_table[PID_SET_PRIO].m_pid = PID_SET_PRIO;
+  g_proc_table[PID_SET_PRIO].m_priority = LOW;
+  g_proc_table[PID_SET_PRIO].m_stack_size = 0x100;
+  g_proc_table[PID_SET_PRIO].mpf_start_pc = &setPriorityProc;
+	
+	g_proc_table[PID_CLOCK].m_pid = PID_CLOCK;
+  g_proc_table[PID_CLOCK].m_priority = HIGH;
+  g_proc_table[PID_CLOCK].m_stack_size = 0x100;
+  g_proc_table[PID_CLOCK].mpf_start_pc = &wallClockProc;
+	
+	g_proc_table[PID_KCD].m_pid = PID_KCD;
+  g_proc_table[PID_KCD].m_priority = HIGH;
+  g_proc_table[PID_KCD].m_stack_size = 0x100;
+  g_proc_table[PID_KCD].mpf_start_pc = &kcdProc;
+	
+	g_proc_table[PID_CRT].m_pid = PID_CRT;
+  g_proc_table[PID_CRT].m_priority = HIGH;
+  g_proc_table[PID_CRT].m_stack_size = 0x100;
+  g_proc_table[PID_CRT].mpf_start_pc = &crtProc;
+	
+	g_proc_table[PID_TIMER_IPROC].m_pid = PID_TIMER_IPROC;
+  g_proc_table[PID_TIMER_IPROC].m_priority = HIGH;
+  g_proc_table[PID_TIMER_IPROC].m_stack_size = 0x100;
+  g_proc_table[PID_TIMER_IPROC].mpf_start_pc = &TIMER0_IRQHandler;
+	
+	g_proc_table[PID_UART_IPROC].m_pid = PID_UART_IPROC;
+  g_proc_table[PID_UART_IPROC].m_priority = HIGH;
+  g_proc_table[PID_UART_IPROC].m_stack_size = 0x100;
+  g_proc_table[PID_UART_IPROC].mpf_start_pc = &UART0_IRQHandler;
 
   /* initialize exception stack frame (i.e. initial context) for each process */
   for ( i = 0; i < NUM_PROCS; i++ ) {
@@ -170,7 +225,7 @@ void process_init()
   }
 
   /* initialize priority queue */
-  for ( i = 0; i < NUM_PROCS; i++ ) {
+  for ( i = 0; i <= PID_CRT; i++ ) {
     //insert PCB[i] into priority queue
 #ifdef DEBUG_0
     printf("iValue 0x%x \n", gp_pcbs[i]);
@@ -369,34 +424,8 @@ int k_get_process_priority(int process_id){
  */
 void nullProc(void)
 {
-  int ret_val = 666;
-  while ( 1) {
-#ifdef DEBUG_0
-    printf("nullProc: ret_val=%d\n", ret_val);
-#endif /* DEBUG_0 */
-    ret_val = k_release_processor();
+  while (1) {
+    k_release_processor();
   }
-}
-
-/**
- * @brief: a process that
- *         handles delayed sends
- */
-void timer_i_process(void)
-{
-	envelope* env;
-  while (1){
-		env = timer_receive_message();
-		if (env == NULL) {
-			break;
-		}
-		//place envelope in queue sorted by send time
-		timer_insert(env);
-	}
-	//send messages in queue that have expired
-	while (message_ready()){
-		env = timer_dequeue();
-		timer_send_message(env);
-	}
 }
 

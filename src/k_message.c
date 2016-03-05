@@ -84,18 +84,18 @@ int timer_send_message(envelope* env) {
 }
 
 envelope* timer_receive_message() {
-	envelope* envelope = TIMER_PCB->msgHead;
+	envelope* envelope = gp_pcbs[PID_TIMER_IPROC]->msgHead;
 	
 	if (envelope == NULL) {
 		return NULL;
 	}
 	
-	if (TIMER_PCB->msgHead == TIMER_PCB->msgTail) {
-    TIMER_PCB->msgHead = NULL;
-    TIMER_PCB->msgTail = NULL;
+	if (gp_pcbs[PID_TIMER_IPROC]->msgHead == gp_pcbs[PID_TIMER_IPROC]->msgTail) {
+    gp_pcbs[PID_TIMER_IPROC]->msgHead = NULL;
+    gp_pcbs[PID_TIMER_IPROC]->msgTail = NULL;
   }
   else {
-    TIMER_PCB->msgHead = TIMER_PCB->msgHead->next;
+    gp_pcbs[PID_TIMER_IPROC]->msgHead = gp_pcbs[PID_TIMER_IPROC]->msgHead->next;
   }
 
 	return envelope;
@@ -120,13 +120,13 @@ int k_delayed_send(int process_id, void* message_envelope, int delay) {
 	env->recv_id = process_id;
 	env->send_time = get_time() + delay;
 	
-	if (TIMER_PCB->msgTail == NULL) {
-		TIMER_PCB->msgHead = env;
-		TIMER_PCB->msgTail = env;
+	if (gp_pcbs[PID_TIMER_IPROC]->msgTail == NULL) {
+		gp_pcbs[PID_TIMER_IPROC]->msgHead = env;
+		gp_pcbs[PID_TIMER_IPROC]->msgTail = env;
 	}
 	else {
-		TIMER_PCB->msgTail->next = env;
-		TIMER_PCB->msgTail = env;
+		gp_pcbs[PID_TIMER_IPROC]->msgTail->next = env;
+		gp_pcbs[PID_TIMER_IPROC]->msgTail = env;
 	}
 	//No need for pre-emption
 	return RTX_OK;

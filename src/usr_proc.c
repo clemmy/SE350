@@ -100,6 +100,24 @@ void proc6(void) {
 	}
 }
 
+void procA(void) {
+	while (1) {
+		release_processor();
+	}
+}
+
+void procB(void) {
+	while (1) {
+		release_processor();
+	}
+}
+
+void procC(void) {
+	while (1) {
+		release_processor();
+	}
+}
+
 // /**
 //  * @brief: a process that prints results and yields the CPU if not done
 //  *         

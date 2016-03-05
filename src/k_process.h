@@ -16,8 +16,7 @@
 
 #define INITIAL_xPSR 0x01000000        /* user process initial xPSR value */
 #define NUM_OF_PRIORITIES 5
-#define TIMER_ID 7
-#define TIMER_PCB gp_pcbs[TIMER_ID]
+
 
 typedef struct PCBQ PCBQ;
 struct PCBQ {
