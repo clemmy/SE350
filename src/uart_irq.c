@@ -216,20 +216,27 @@ void c_UART0_IRQHandler(void)
 			msg_str_index = 0;
 		}
 		
-		cur_msg->mtext[msg_str_index] = g_char_in;
-		msg_str_index++;
-		
 		// if reached newline or if mtext out of space, send message
-		if (g_char_in == '\n' || msg_str_index > (BLOCK_SIZE - sizeof(envelope) - sizeof(MSG_BUF) - 10)) {
+		if (g_char_in == '\r' || msg_str_index > (BLOCK_SIZE - sizeof(envelope) - sizeof(MSG_BUF) - 10)) {
 			MSG_BUF* copy = cur_msg;
-			cur_msg = NULL;
-			msg_str_index = 0;
 			
+			copy->mtext[msg_str_index] = '\n';
+			msg_str_index++;
+			copy->mtext[msg_str_index] = '\r';
+			msg_str_index++;
 			copy->mtext[msg_str_index] = '\0';
 			copy->mtype = DEFAULT;
 			
+			cur_msg = NULL;
+			msg_str_index = 0;
+			
 			k_send_message_non_preempt(PID_KCD, copy);
 		}
+		else {
+			cur_msg->mtext[msg_str_index] = g_char_in;
+			msg_str_index++;
+		}
+		
 	} else if (IIR_IntId & IIR_THRE) {
 	/* THRE Interrupt, transmit holding register becomes empty */
 

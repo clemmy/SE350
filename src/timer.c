@@ -111,10 +111,11 @@ __asm void TIMER0_IRQHandler(void)
 	IMPORT c_TIMER0_IRQHandler
 	PUSH{r4-r11, lr}
 	BL c_TIMER0_IRQHandler
-	POP{r4-r11}
-	IMPORT k_release_processor
+	
+	;IMPORT k_release_processor
 	;BL __enable_irq
-	BL k_release_processor
+	;BL k_release_processor
+	POP{r4-r11, pc}
 }
 
 /**

@@ -45,5 +45,6 @@ extern void makeBlock(void);					/* Sets state of current process to blocked */
 extern void makeReady(void);					/* Transfers the highest priority PCB from the block queue to the ready queue*/
 extern int blockPQIsEmpty(void);
 extern void timer_i_process(void);
+extern void* k_request_memory_block_non_blocking( void );
 
 #endif

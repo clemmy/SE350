@@ -146,7 +146,7 @@ void process_init()
   g_proc_table[PID_NULL].mpf_start_pc = &nullProc;
 
 	// init test processes
-  for ( i = 1; i < NUM_TEST_PROCS; i++ ) {
+  for ( i = 1; i <= NUM_TEST_PROCS; i++ ) {
     g_proc_table[i].m_pid = g_test_procs[i-1].m_pid;
     g_proc_table[i].m_priority = g_test_procs[i-1].m_priority;
     g_proc_table[i].m_stack_size = g_test_procs[i-1].m_stack_size;
@@ -246,7 +246,7 @@ PCB *scheduler(void)
     if (gp_current_process->m_state == BLK){
       processEnqueue(BlockPQ, gp_current_process);
     }
-    else if (gp_current_process->m_state == RDY) {
+    else if (gp_current_process->m_state == RUN) {
       processEnqueue(ReadyPQ, gp_current_process);
     }
   }
@@ -427,5 +427,61 @@ void nullProc(void)
   while (1) {
     k_release_processor();
   }
+}
+
+/**
+ * @brief: a function that
+ *         returns all pcbs in a state in an envelope.
+ */
+MSG_BUF* pcbs_in_state (int state){
+	MSG_BUF* msg = (MSG_BUF *)k_request_memory_block_non_blocking();
+	msg->mtype = DEFAULT;
+	int str_index = 0;
+	
+	if (msg == NULL){
+		return NULL;
+	}
+	
+	for (int i = 0; i < NUM_PROCS; i++){
+			if (gp_pcbs[i]->m_state == state){
+				msg->mtext[str_index] = 'P';
+				str_index++;
+				msg->mtext[str_index] = 'I';
+				str_index++;
+				msg->mtext[str_index] = 'D';
+				str_index++;
+				msg->mtext[str_index] = ':';
+				str_index++;
+				msg->mtext[str_index] = ' ';
+				str_index++;
+				msg->mtext[str_index] = gp_pcbs[i]->m_pid / 10 + '0';
+				str_index++;
+				msg->mtext[str_index] = gp_pcbs[i]->m_pid % 10 + '0';
+				str_index++;
+				msg->mtext[str_index] = ',';
+				str_index++;
+				msg->mtext[str_index] = ' ';
+				str_index++;
+				msg->mtext[str_index] = 'P';
+				str_index++;
+				msg->mtext[str_index] = 'R';
+				str_index++;
+				msg->mtext[str_index] = 'I';
+				str_index++;
+				msg->mtext[str_index] = ':';
+				str_index++;
+				msg->mtext[str_index] = ' ';
+				str_index++;
+				msg->mtext[str_index] = gp_pcbs[i]->m_priority + '0';
+				str_index++;
+				msg->mtext[str_index] = '\n';
+				str_index++;
+				msg->mtext[str_index] = '\r';
+				str_index++;
+			}
+	}
+	msg->mtext[str_index] = '\0';
+	
+	return msg;
 }
 

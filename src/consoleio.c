@@ -6,6 +6,9 @@ extern const uint8_t BUFFER_SIZE;
 extern uint8_t g_buffer[];
 extern uint8_t g_buffer_end;
 extern void enable_UART_transmit(void);
+extern MSG_BUF* pcbs_in_state (int state);
+
+typedef enum {NEW = 0, RDY, RUN, BLK, WAIT} PROC_STATE_E;
 
 void copyStr(char* src, char* dest) {
     while (1) {
@@ -24,6 +27,9 @@ MSG_BUF* copyMessage(MSG_BUF* msg) {
     copyStr(msg->mtext, copy->mtext);
     return copy;
 }
+
+
+
 
 void kcdProc() {
     const int maxNumIdentifiers = 16;
@@ -53,7 +59,7 @@ void kcdProc() {
                     }
                 }
             }
-
+						
             if (recv_id == -1) {
                 msg->mtype = DEFAULT;
                 send_message(PID_CRT, (void*) msg);
@@ -66,6 +72,19 @@ void kcdProc() {
 
                 send_message(recv_id, (void*) copy);
             }
+						
+						if (msg->mtext[0] == '!') {
+							MSG_BUF* msg2 = pcbs_in_state(RDY);
+							send_message(PID_CRT, (void*) msg2);
+						}
+						else if (msg->mtext[0] == '@') {
+							MSG_BUF* msg2 = pcbs_in_state(BLK);
+							send_message(PID_CRT, (void*) msg2);
+						}
+						else if (msg->mtext[0] == '#') {
+							MSG_BUF* msg2 = pcbs_in_state(WAIT);
+							send_message(PID_CRT, (void*) msg2);
+						}
         }
     }
 }

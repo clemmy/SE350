@@ -61,6 +61,8 @@ typedef unsigned int U32;
 typedef struct _envelope envelope;
 
 /* process states, note we only assume three states in this example */
+//BLK means that the process is blocked on memory.
+//WAIT means that the process is waiting for a message.
 typedef enum {NEW = 0, RDY, RUN, BLK, WAIT} PROC_STATE_E;
 
 /*

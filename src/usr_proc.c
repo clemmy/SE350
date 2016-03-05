@@ -30,6 +30,9 @@ void set_test_procs() {
 		g_test_procs[i].m_priority=MEDIUM;
 		g_test_procs[i].m_stack_size=0x400;
 	}
+	
+	//g_test_procs[3].m_priority=HIGH;
+	g_test_procs[4].m_priority=HIGH;
   
 	g_test_procs[0].mpf_start_pc = &proc1;
 	g_test_procs[1].mpf_start_pc = &proc2;
@@ -80,17 +83,32 @@ void proc2(void) {
 	}
 }
 void proc3(void) {
+	MSG_BUF* msg = (MSG_BUF*) request_memory_block(); 
+	msg->mtype = DEFAULT;
+	msg->mtext[0] = 'h';
+	msg->mtext[1] = 'i';
+	msg->mtext[2] = '\0';
+	
+	delayed_send(5, msg, 200);
+	
 	while (1) {
+		uart1_put_string("ABCD");
 		release_processor();
 	}
 }
 void proc4(void) {
 	while (1) {
+		uart1_put_string("1234");
 		release_processor();
 	}
 }
 void proc5(void) {
+	int ignore;
+	
+	receive_message(&ignore);
+	
 	while (1) {
+		uart1_put_string("SENT");
 		release_processor();
 	}
 }

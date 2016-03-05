@@ -1,4 +1,5 @@
 #include "rtx.h"
+#define TIME_DELAY 1000
 
 int nextNonWhitespace(char* cur) {
     for (int i = 0; cur[i] != '\0'; i++) {
@@ -30,7 +31,7 @@ int parseTime(char* timeStr) {
 
 /**
  * Gets time in seconds and writes its str representation in hh:mm:ss to dest
- * dest must have at least 9 bytes!!!
+ * dest must have at least 11 bytes!!!
  */
 void timeToStr(int time, char* dest) {
     int hours = time / (60 * 60);
@@ -48,7 +49,9 @@ void timeToStr(int time, char* dest) {
     dest[5] = ':';
     dest[6] = intToChar(seconds / 10);
     dest[7] = intToChar(seconds % 10);
-    dest[8] = '\0';
+		dest[8] = '\n';
+		dest[9] = '\r';
+    dest[10] = '\0';
 }
 
 void wallClockProc() {
@@ -76,7 +79,7 @@ void wallClockProc() {
             msg->mtext[2] = 'I';
             msg->mtext[3] = '\0';
             msg->mtext[4] = incrementorID;
-            delayed_send(PID_CLOCK, msg, 1000);
+            delayed_send(PID_CLOCK, msg, TIME_DELAY);
 
             MSG_BUF* printMsg = (MSG_BUF*) request_memory_block();
             printMsg->mtype = DEFAULT;
@@ -86,7 +89,7 @@ void wallClockProc() {
         else if (command == 'I') {
             if (msg->mtext[4] == incrementorID) {
                 time++;
-                delayed_send(PID_CLOCK, msg, 1000);
+                delayed_send(PID_CLOCK, msg, TIME_DELAY);
 
                 MSG_BUF* printMsg = (MSG_BUF*) request_memory_block();
                 printMsg->mtype = DEFAULT;
@@ -99,7 +102,7 @@ void wallClockProc() {
         }
         else if (command == 'S') {
             incrementorID++;
-            int offset = nextNonWhitespace(msg->mtext);
+            int offset = nextNonWhitespace(msg->mtext + 3) + 3;
             time = parseTime(msg->mtext + offset);
             msg->mtype = DEFAULT;
             msg->mtext[0] = '%';
@@ -107,7 +110,7 @@ void wallClockProc() {
             msg->mtext[2] = 'I';
             msg->mtext[3] = '\0';
             msg->mtext[4] = incrementorID;
-            delayed_send(PID_CLOCK, msg, 1000);
+            delayed_send(PID_CLOCK, msg, TIME_DELAY);
 
             MSG_BUF* printMsg = (MSG_BUF*) request_memory_block();
             printMsg->mtype = DEFAULT;
