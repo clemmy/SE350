@@ -128,7 +128,7 @@ void c_TIMER0_IRQHandler(void)
 	
 	envelope* env;
   while (1){
-		env = timer_receive_message();
+		env = k_receive_message_non_blocking(PID_TIMER_IPROC);
 		if (env == NULL) {
 			break;
 		}

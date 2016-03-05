@@ -59,6 +59,38 @@ void* k_receive_message(int* sender_id) {
 	return (void*) (envelope + 1);
 }
 
+int k_send_message_non_preempt(int process_id, void* message_envelope) {
+	
+	PCB* thePCB;
+	envelope* env;
+	
+	env = (envelope*) message_envelope - 1;
+	env->next = NULL;
+	env->sender_id = gp_current_process->m_pid;
+	env->recv_id = process_id;
+	
+	thePCB = gp_pcbs[env->recv_id];
+	
+	if (thePCB->msgTail == NULL) {
+		thePCB->msgHead = env;
+		thePCB->msgTail = env;
+	}
+	else {
+		thePCB->msgTail->next = env;
+		thePCB->msgTail = env;
+	}
+	
+	// set to ready if not blocked on memory
+	
+	if (thePCB->m_state == WAIT){
+		processEnqueue(ReadyPQ, thePCB);
+		thePCB->m_state = RDY;
+	}
+	
+	return RTX_OK;
+	
+}
+
 int timer_send_message(envelope* env) {
 	
 	PCB* thePCB;
@@ -83,19 +115,19 @@ int timer_send_message(envelope* env) {
 	
 }
 
-envelope* timer_receive_message() {
-	envelope* envelope = gp_pcbs[PID_TIMER_IPROC]->msgHead;
+envelope* k_receive_message_non_blocking(int proc_id) {
+	envelope* envelope = gp_pcbs[proc_id]->msgHead;
 	
 	if (envelope == NULL) {
 		return NULL;
 	}
 	
-	if (gp_pcbs[PID_TIMER_IPROC]->msgHead == gp_pcbs[PID_TIMER_IPROC]->msgTail) {
-    gp_pcbs[PID_TIMER_IPROC]->msgHead = NULL;
-    gp_pcbs[PID_TIMER_IPROC]->msgTail = NULL;
+	if (gp_pcbs[proc_id]->msgHead == gp_pcbs[proc_id]->msgTail) {
+    gp_pcbs[proc_id]->msgHead = NULL;
+    gp_pcbs[proc_id]->msgTail = NULL;
   }
   else {
-    gp_pcbs[PID_TIMER_IPROC]->msgHead = gp_pcbs[PID_TIMER_IPROC]->msgHead->next;
+    gp_pcbs[proc_id]->msgHead = gp_pcbs[proc_id]->msgHead->next;
   }
 
 	return envelope;

@@ -30,10 +30,9 @@ extern PCBQ ReadyPQ[];
 
 int k_send_message(int process_id, void* message_envelope);
 //int k_has_message(int process_id);
-int timer_send_message(envelope* env);
-envelope* timer_receive_message(void);
 void* k_receive_message(int* sender_id);
 int k_delayed_send(int process_id, void* message_envelope, int delay);
-
-
+envelope* k_receive_message_non_blocking(int proc_id);
+int k_send_message_non_preempt(int process_id, void* message_envelope);
+int timer_send_message(envelope* message_envelope);
 #endif

@@ -228,7 +228,7 @@ void c_UART0_IRQHandler(void)
 			copy->mtext[msg_str_index] = '\0';
 			copy->mtype = DEFAULT;
 			
-			k_send_message_non_blocking(PID_KCD, copy);
+			k_send_message_non_preempt(PID_KCD, copy);
 		}
 	} else if (IIR_IntId & IIR_THRE) {
 	/* THRE Interrupt, transmit holding register becomes empty */
