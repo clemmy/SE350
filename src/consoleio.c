@@ -1,8 +1,11 @@
+#include <LPC17xx.h>
 #include "rtx.h"
+
 extern uint8_t *gp_buffer;
 extern const uint8_t BUFFER_SIZE;
 extern uint8_t g_buffer[];
 extern uint8_t g_buffer_end;
+extern void enable_UART_transmit(void);
 
 void copyStr(char* src, char* dest) {
     while (1) {
@@ -84,8 +87,8 @@ void crtProc() {
         // print string using UART interrupt process
 				copyToBuffer(string);
 				
-				// enable transmit interrupts
-				pUart->IER = IER_RBR | IER_THRE | IER_RLS; 
+				// enable transmit interrupts				
+				enable_UART_transmit();
 
         release_memory_block((void*) msg);
     }
