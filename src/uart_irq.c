@@ -207,6 +207,15 @@ void c_UART0_IRQHandler(void)
 		uart1_put_string("\n\r");
 #endif // DEBUG_0
 		
+		pUart->IER = IER_RBR | IER_THRE | IER_RLS;
+		if (g_char_in == '\r') {
+			pUart->THR = '\n';
+		}
+		else {
+			pUart->THR = g_char_in;
+		}
+		pUart->IER = IER_RBR | IER_RLS;
+		
 		if (cur_msg == NULL) {
 			cur_msg = (MSG_BUF*) k_request_memory_block_non_blocking();
 			// no more memory, return

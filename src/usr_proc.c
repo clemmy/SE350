@@ -77,38 +77,76 @@ void proc2(void) {
 	int sender;
 	while (1) {
 		MSG_BUF* msg = (MSG_BUF*) receive_message(&sender);
-		uart1_put_string((unsigned char*)msg->mtext);
-		uart1_put_char(sender + '0');
+		//uart1_put_string((unsigned char*)msg->mtext);
+		//uart1_put_char(sender + '0');
 		release_memory_block((void*)msg);
 	}
 }
 void proc3(void) {
 	MSG_BUF* msg = (MSG_BUF*) request_memory_block(); 
 	msg->mtype = DEFAULT;
-	msg->mtext[0] = 'h';
-	msg->mtext[1] = 'i';
-	msg->mtext[2] = '\0';
+	msg->mtext[0] = '2';
+	msg->mtext[1] = '0';
+	msg->mtext[2] = '0';
+	msg->mtext[3] = '\0';
+	
+	MSG_BUF* msg2 = (MSG_BUF*) request_memory_block(); 
+	msg2->mtype = DEFAULT;
+	msg2->mtext[0] = '1';
+	msg2->mtext[1] = '0';
+	msg2->mtext[2] = '0';
+	msg2->mtext[3] = '\0';
+	
+	MSG_BUF* msg3 = (MSG_BUF*) request_memory_block(); 
+	msg3->mtype = DEFAULT;
+	msg3->mtext[0] = '5';
+	msg3->mtext[1] = '0';
+	msg3->mtext[2] = '\0';
+	
+	MSG_BUF* msg4 = (MSG_BUF*) request_memory_block(); 
+	msg4->mtype = DEFAULT;
+	msg4->mtext[0] = '2';
+	msg4->mtext[1] = '0';
+	msg4->mtext[2] = '1';
+	msg4->mtext[3] = '\0';
 	
 	delayed_send(5, msg, 200);
+	delayed_send(5, msg2, 100);
+	delayed_send(5, msg3, 50);
+	delayed_send(5, msg4, 201);
 	
 	while (1) {
-		uart1_put_string("ABCD");
+		//uart1_put_string("ABCD");
 		release_processor();
 	}
 }
 void proc4(void) {
 	while (1) {
-		uart1_put_string("1234");
+		//uart1_put_string("1234");
 		release_processor();
 	}
 }
 void proc5(void) {
 	int ignore;
 	
-	receive_message(&ignore);
+	MSG_BUF* msg = (MSG_BUF*)receive_message(&ignore);
+	//uart1_put_string("pid:");
+	//uart1_put_char(ignore+'0');
+	send_message(PID_CRT, msg);
+	
+	MSG_BUF* msg2 = (MSG_BUF*)receive_message(&ignore);
+	//uart1_put_string("pid:");
+	//uart1_put_char(ignore+'0');
+	send_message(PID_CRT, msg2);
+	
+	MSG_BUF* msg3 = (MSG_BUF*)receive_message(&ignore);
+	send_message(PID_CRT, msg3);
+	
+	MSG_BUF* msg4 = (MSG_BUF*)receive_message(&ignore);
+	send_message(PID_CRT, msg4);
 	
 	while (1) {
-		uart1_put_string("SENT");
+		//uart1_put_string("SENT");
 		release_processor();
 	}
 }

@@ -61,16 +61,12 @@ void kcdProc() {
             }
 						
             if (recv_id == -1) {
-                msg->mtype = DEFAULT;
-                send_message(PID_CRT, (void*) msg);
+                release_memory_block((void*) msg);
             }
             else {
                 msg->mtype = DEFAULT;
-                MSG_BUF* copy = copyMessage(msg);
 
-                send_message(PID_CRT, (void*) msg);
-
-                send_message(recv_id, (void*) copy);
+                send_message(recv_id, (void*) msg);
             }
 						
 						if (msg->mtext[0] == '!') {

@@ -21,6 +21,7 @@ U8 *p_end;
 MemQueue memQueue;
 unsigned int numOfBlocks;
 
+int numBlockChange = 0;
 
 /**
  * @brief: Initialize RAM as follows:
@@ -191,7 +192,7 @@ int k_release_memory_block(void *p_mem_blk) {
 
 	// check that the block is BLOCK_SIZE-aligned and between start and end of the PCBS and start of the stack
   if (!(p_end <= p_mem_blk && p_mem_blk < gp_stack && ((U32)p_mem_blk - (U32)p_end) % BLOCK_SIZE == 0)) {
-    return RTX_ERR;
+		return RTX_ERR;
   }
 
   newTail = (MemBlock *) p_mem_blk;
