@@ -49,6 +49,9 @@ void kcdProc() {
             }
             release_memory_block((void*) msg);
         }
+				else if (msg->mtype == ECHO) {
+					send_message(PID_CRT, (void*) msg);
+				}
         else {
             int recv_id = -1;
             if (msg->mtext[0] == '%') {

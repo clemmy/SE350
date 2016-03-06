@@ -1,5 +1,5 @@
 #include "rtx.h"
-#define TIME_DELAY 1000
+#define TIME_DELAY 10
 
 int nextNonWhitespace(char* cur) {
     for (int i = 0; cur[i] != '\0'; i++) {

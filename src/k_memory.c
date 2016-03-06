@@ -8,6 +8,7 @@
 #include "k_memory.h"
 #include "k_process.h"
 #include "k_message.h"
+#include "uart_polling.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -21,7 +22,6 @@ U8 *p_end;
 MemQueue memQueue;
 unsigned int numOfBlocks;
 
-int numBlockChange = 0;
 
 /**
  * @brief: Initialize RAM as follows:
@@ -58,6 +58,14 @@ int numBlockChange = 0;
 0x10000000+---------------------------+ Low Address
 
 */
+
+int getNumFreeBlocks() {
+	int count = 0;
+	for (MemBlock* cur = memQueue.head; cur != NULL; cur = cur->next) {
+		count++;
+	}
+	return count;
+}
 
 void memory_init(void)
 {
@@ -136,6 +144,13 @@ U32 *alloc_stack(U32 size_b)
 // pops an available memory block from the linked list of available memory blocks in the heap
 void *k_request_memory_block(void) {
   MemBlock* prevHead;
+	
+	uart1_put_string("Blocks remaining: ");
+	int n = getNumFreeBlocks();
+	uart1_put_char(n / 100 + '0');
+	uart1_put_char((n % 100) / 10 + '0');
+	uart1_put_char(n % 10 + '0');
+	uart1_put_string("\n\r");
 
 #ifdef DEBUG_0
   printf("k_request_memory_block: entering...\n");
@@ -160,6 +175,13 @@ void *k_request_memory_block(void) {
 void *k_request_memory_block_non_blocking(void) {
   MemBlock* prevHead;
 
+	uart1_put_string("Blocks remaining: ");
+	int n = getNumFreeBlocks();
+	uart1_put_char(n / 100 + '0');
+	uart1_put_char((n % 100) / 10 + '0');
+	uart1_put_char(n % 10 + '0');
+	uart1_put_string("\n\r");
+	
 #ifdef DEBUG_0
   printf("k_request_memory_block_non_blocking: entering...\n");
 #endif /* ! DEBUG_0 */
@@ -183,6 +205,13 @@ void *k_request_memory_block_non_blocking(void) {
 // adds the specified block back into the linked list of available memory blocks in the heap
 int k_release_memory_block(void *p_mem_blk) {
   MemBlock * newTail;
+	
+	uart1_put_string("Blocks remaining: ");
+	int n = getNumFreeBlocks();
+	uart1_put_char(n / 100 + '0');
+	uart1_put_char((n % 100) / 10 + '0');
+	uart1_put_char(n % 10 + '0');
+	uart1_put_string("\n\r");
 	
 	p_mem_blk = (void*) ((envelope*) p_mem_blk - 1);
 	
@@ -212,3 +241,5 @@ int k_release_memory_block(void *p_mem_blk) {
 
   return RTX_OK;
 }
+
+

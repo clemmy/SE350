@@ -207,14 +207,20 @@ void c_UART0_IRQHandler(void)
 		uart1_put_string("\n\r");
 #endif // DEBUG_0
 		
-		pUart->IER = IER_RBR | IER_THRE | IER_RLS;
-		if (g_char_in == '\r') {
-			pUart->THR = '\n';
+		MSG_BUF* echoMsg = (MSG_BUF*) k_request_memory_block_non_blocking();
+		if (echoMsg != NULL) {
+			echoMsg->mtype = ECHO;
+			if (g_char_in == '\r') {
+				echoMsg->mtext[0] = '\n';
+				echoMsg->mtext[1] = '\r';
+				echoMsg->mtext[2] = '\0';
+			}
+			else {
+				echoMsg->mtext[0] = g_char_in;
+				echoMsg->mtext[1] = '\0';
+			}
+			k_send_message_non_preempt(PID_KCD, (void*) echoMsg);
 		}
-		else {
-			pUart->THR = g_char_in;
-		}
-		pUart->IER = IER_RBR | IER_RLS;
 		
 		if (cur_msg == NULL) {
 			cur_msg = (MSG_BUF*) k_request_memory_block_non_blocking();
@@ -239,7 +245,7 @@ void c_UART0_IRQHandler(void)
 			cur_msg = NULL;
 			msg_str_index = 0;
 			
-			k_send_message_non_preempt(PID_KCD, copy);
+			k_send_message_non_preempt(PID_KCD, (void*) copy);
 		}
 		else {
 			cur_msg->mtext[msg_str_index] = g_char_in;
