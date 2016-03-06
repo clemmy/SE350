@@ -107,14 +107,15 @@ uint32_t timer_init(uint8_t n_timer)
 __asm void TIMER0_IRQHandler(void)
 {
 	PRESERVE8
-	;BL __disable_irq
+	IMPORT __disable_irq
+	IMPORT __enable_irq
 	IMPORT c_TIMER0_IRQHandler
+	IMPORT k_release_processor
+	;BL __disable_irq
 	PUSH{r4-r11, lr}
 	BL c_TIMER0_IRQHandler
-	
-	;IMPORT k_release_processor
 	;BL __enable_irq
-	;BL k_release_processor
+	BL k_release_processor
 	POP{r4-r11, pc}
 }
 

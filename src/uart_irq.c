@@ -173,15 +173,13 @@ __asm void UART0_IRQHandler(void)
 	PRESERVE8
 	IMPORT c_UART0_IRQHandler
 	IMPORT k_release_processor
+	IMPORT __disable_irq
+	IMPORT __enable_irq
+	;BL __disable_irq
 	PUSH{r4-r11, lr}
 	BL c_UART0_IRQHandler
-	;LDR R4, =__cpp(&g_switch_flag)
-	;LDR R4, [R4]
-	;MOV R5, #0     
-	;CMP R4, R5
-	;BEQ  RESTORE    ; if g_switch_flag == 0, then restore the process that was interrupted
-	BL k_release_processor  ; otherwise (i.e g_switch_flag == 1, then switch to the other process)
-;RESTORE
+	;BL __enable_irq
+	;BL k_release_processor
 	POP{r4-r11, pc}
 } 
 /**
@@ -207,14 +205,23 @@ void c_UART0_IRQHandler(void)
 		uart1_put_string("\n\r");
 #endif // DEBUG_0
 		
-		pUart->IER = IER_RBR | IER_THRE | IER_RLS;
-		if (g_char_in == '\r') {
-			pUart->THR = '\n';
+		MSG_BUF* echoMsg = (MSG_BUF*) k_request_memory_block_non_blocking();
+		if (echoMsg != NULL) {
+			echoMsg->mtype = ECHO;
+			if (g_char_in == '\r') {
+				echoMsg->mtext[0] = '\n';
+				echoMsg->mtext[1] = '\r';
+				echoMsg->mtext[2] = '\0';
+			}
+			else {
+				echoMsg->mtext[0] = g_char_in;
+				echoMsg->mtext[1] = '\0';
+			}
+			
+			k_send_message_non_preempt(PID_KCD, (void*) echoMsg);
 		}
-		else {
-			pUart->THR = g_char_in;
-		}
-		pUart->IER = IER_RBR | IER_RLS;
+		
+		
 		
 		if (cur_msg == NULL) {
 			cur_msg = (MSG_BUF*) k_request_memory_block_non_blocking();
@@ -228,18 +235,14 @@ void c_UART0_IRQHandler(void)
 		// if reached newline or if mtext out of space, send message
 		if (g_char_in == '\r' || msg_str_index > (BLOCK_SIZE - sizeof(envelope) - sizeof(MSG_BUF) - 10)) {
 			MSG_BUF* copy = cur_msg;
-			
-			copy->mtext[msg_str_index] = '\n';
-			msg_str_index++;
-			copy->mtext[msg_str_index] = '\r';
-			msg_str_index++;
+
 			copy->mtext[msg_str_index] = '\0';
 			copy->mtype = DEFAULT;
 			
 			cur_msg = NULL;
 			msg_str_index = 0;
 			
-			k_send_message_non_preempt(PID_KCD, copy);
+			k_send_message_non_preempt(PID_KCD, (void*) copy);
 		}
 		else {
 			cur_msg->mtext[msg_str_index] = g_char_in;

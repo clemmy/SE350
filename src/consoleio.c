@@ -1,5 +1,6 @@
 #include <LPC17xx.h>
 #include "rtx.h"
+#include "uart_polling.h"
 
 extern uint8_t *gp_buffer;
 extern const uint8_t BUFFER_SIZE;
@@ -40,6 +41,7 @@ void kcdProc() {
     while (1) {
         int sender_id;
         MSG_BUF* msg = (MSG_BUF*) receive_message(&sender_id);
+				
         if (msg->mtype == KCD_REG) {
             if (numIdentifiers < maxNumIdentifiers) {
                 identifiers[numIdentifiers] = msg->mtext[1]; // msg->mtext[0] == '%', msg->mtext[2] == '\0'
@@ -47,8 +49,14 @@ void kcdProc() {
 
                 numIdentifiers++;
             }
+						if (msg == NULL) {
+							uart1_put_string("msg == NULL");
+						}
             release_memory_block((void*) msg);
         }
+				else if (msg->mtype == ECHO) {
+					send_message(PID_CRT, (void*) msg);
+				}
         else {
             int recv_id = -1;
             if (msg->mtext[0] == '%') {
@@ -61,6 +69,9 @@ void kcdProc() {
             }
 						
             if (recv_id == -1) {
+						if (msg == NULL) {
+														uart1_put_string("msg == NULL");
+						}
                 release_memory_block((void*) msg);
             }
             else {
@@ -105,6 +116,9 @@ void crtProc() {
 				// enable transmit interrupts				
 				enable_UART_transmit();
 
+									if (msg == NULL) {
+														uart1_put_string("msg == NULL");
+						}
         release_memory_block((void*) msg);
     }
 }

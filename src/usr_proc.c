@@ -28,7 +28,7 @@ void set_test_procs() {
 	for( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		g_test_procs[i].m_pid=(U32)(i+1);
 		g_test_procs[i].m_priority=MEDIUM;
-		g_test_procs[i].m_stack_size=0x400;
+		g_test_procs[i].m_stack_size=0x100;
 	}
 	
 	//g_test_procs[3].m_priority=HIGH;
@@ -79,6 +79,9 @@ void proc2(void) {
 		MSG_BUF* msg = (MSG_BUF*) receive_message(&sender);
 		//uart1_put_string((unsigned char*)msg->mtext);
 		//uart1_put_char(sender + '0');
+								if (msg == NULL) {
+														uart1_put_string("msg == NULL");
+						}
 		release_memory_block((void*)msg);
 	}
 }

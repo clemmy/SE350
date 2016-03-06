@@ -37,6 +37,7 @@
 /* Message Types */
 #define DEFAULT 0
 #define KCD_REG 1
+#define ECHO 2
 
 /* ----- Types ----- */
 typedef unsigned int U32;

@@ -1,4 +1,5 @@
 #include "rtx.h"
+#include "uart_polling.h"
 #define TIME_DELAY 1000
 
 int nextNonWhitespace(char* cur) {
@@ -97,6 +98,9 @@ void wallClockProc() {
                 send_message(PID_CRT, printMsg);
             }
             else {
+													if (msg == NULL) {
+														uart1_put_string("msg == NULL");
+						}
                 release_memory_block((void*) msg);
             }
         }
@@ -119,9 +123,15 @@ void wallClockProc() {
         }
         else if (command == 'T') {
             incrementorID++;
+											if (msg == NULL) {
+														uart1_put_string("msg == NULL");
+						}
             release_memory_block((void*) msg);
         }
         else {
+											if (msg == NULL) {
+														uart1_put_string("msg == NULL");
+						}
             release_memory_block((void*) msg);
         }
     }

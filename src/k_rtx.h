@@ -46,6 +46,7 @@
 /* Message Types */
 #define DEFAULT 0
 #define KCD_REG 1
+#define ECHO 2
 
 #ifdef DEBUG_0
 #define USR_SZ_STACK 0x200         /* user proc stack size 512B   */
