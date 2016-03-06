@@ -143,12 +143,14 @@ U32 *alloc_stack(U32 size_b)
 void *k_request_memory_block(void) {
   MemBlock* prevHead;
 	
+#ifdef DEBUG_MEM
 	uart1_put_string("Blocks remaining req_before: ");
 	int n = getNumFreeBlocks();
 	uart1_put_char(n / 100 + '0');
 	uart1_put_char((n % 100) / 10 + '0');
 	uart1_put_char(n % 10 + '0');
 	uart1_put_string("\n\r");
+#endif
 
 #ifdef DEBUG_0
   printf("k_request_memory_block: entering...\n");
@@ -167,12 +169,14 @@ void *k_request_memory_block(void) {
     memQueue.head = memQueue.head->next;
   }
 	
+#ifdef DEBUG_MEM
 	uart1_put_string("Blocks remaining req_after: ");
 	n = getNumFreeBlocks();
 	uart1_put_char(n / 100 + '0');
 	uart1_put_char((n % 100) / 10 + '0');
 	uart1_put_char(n % 10 + '0');
 	uart1_put_string("\n\r");
+#endif
 	
   return (void *) ((envelope*) prevHead + 1);
 }
@@ -180,12 +184,14 @@ void *k_request_memory_block(void) {
 void *k_request_memory_block_non_blocking(void) {
   MemBlock* prevHead;
 
+#ifdef DEBUG_MEM
 	uart1_put_string("Blocks remaining req_nb_before: ");
 	int n = getNumFreeBlocks();
 	uart1_put_char(n / 100 + '0');
 	uart1_put_char((n % 100) / 10 + '0');
 	uart1_put_char(n % 10 + '0');
 	uart1_put_string("\n\r");
+#endif
 	
 #ifdef DEBUG_0
   printf("k_request_memory_block_non_blocking: entering...\n");
@@ -204,12 +210,14 @@ void *k_request_memory_block_non_blocking(void) {
     memQueue.head = memQueue.head->next;
   }
 	
+#ifdef DEBUG_MEM
 	uart1_put_string("Blocks remaining req_nb_after: ");
 	n = getNumFreeBlocks();
 	uart1_put_char(n / 100 + '0');
 	uart1_put_char((n % 100) / 10 + '0');
 	uart1_put_char(n % 10 + '0');
 	uart1_put_string("\n\r");
+#endif
 	
   return (void *) ((envelope*) prevHead + 1);
 }
@@ -220,12 +228,14 @@ int k_release_memory_block(void *p_mem_blk) {
 	
 	__disable_irq();
 	
+#ifdef DEBUG_MEM
 	uart1_put_string("Blocks remaining rel_before: ");
 	int n = getNumFreeBlocks();
 	uart1_put_char(n / 100 + '0');
 	uart1_put_char((n % 100) / 10 + '0');
 	uart1_put_char(n % 10 + '0');
 	uart1_put_string("\n\r");
+#endif
 	
 	void* orig_blk = p_mem_blk;
 	
@@ -237,12 +247,14 @@ int k_release_memory_block(void *p_mem_blk) {
 
 	// check that the block is BLOCK_SIZE-aligned and between start and end of the PCBS and start of the stack
   if (!(p_end <= p_mem_blk && p_mem_blk < gp_stack && ((U32)p_mem_blk - (U32)p_end) % BLOCK_SIZE == 0)) {
+#ifdef DEBUG_MEM
 		uart1_put_string("Blocks remaining rel_error: ");
 		n = getNumFreeBlocks();
 		uart1_put_char(n / 100 + '0');
 		uart1_put_char((n % 100) / 10 + '0');
 		uart1_put_char(n % 10 + '0');
 		uart1_put_string("\n\r");
+#endif
 		
 		__enable_irq();
 		return RTX_ERR;
@@ -263,6 +275,7 @@ int k_release_memory_block(void *p_mem_blk) {
     makeReady();
   }
 	
+#ifdef DEBUG_MEM
 	uart1_put_string("Blocks remaining rel_after: ");
 	n = getNumFreeBlocks();
 	uart1_put_char(n / 100 + '0');
@@ -272,7 +285,7 @@ int k_release_memory_block(void *p_mem_blk) {
 	((MSG_BUF*) orig_blk)->mtext[10] = '\0';
 	uart1_put_string(((MSG_BUF*) orig_blk)->mtext);
 	uart1_put_string("\n\r");
-	
+#endif
 
 	__enable_irq();
   return RTX_OK;
