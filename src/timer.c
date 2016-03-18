@@ -10,12 +10,15 @@
 #include "timer.h"
 #include "k_process.h"
 #include "k_message.h"
+//#include "uart_polling.h"
 
 #define BIT(X) (1<<X)
 
 volatile uint32_t g_timer_count = 0; // increment every 1 ms
 timerQ Q;
 extern int exists_higher_priority_ready_process(void);
+
+
 /**
  * @brief: initialize timer. Only timer 0 is supported
  */
@@ -145,6 +148,10 @@ void c_TIMER0_IRQHandler(void)
 	
 	if (exists_higher_priority_ready_process()) {
 		k_release_processor();
+		//uart1_put_string("timer release processor");
+	}
+	else {
+		//uart1_put_string("timer not release processor");
 	}
 }
 

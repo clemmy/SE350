@@ -343,12 +343,13 @@ int k_release_processor(void)
     p_pcb_old = gp_current_process;
   }
   process_switch(p_pcb_old);
+	__enable_irq();
   return RTX_OK;
 }
 
 int exists_higher_priority_ready_process() {
 	for (int i = 0; i < NUM_OF_PRIORITIES; i++){
-    if (ReadyPQ[i].head != NULL && i > gp_current_process->m_priority){
+    if (ReadyPQ[i].head != NULL && i < gp_current_process->m_priority){
       return 1;
     }
   }
