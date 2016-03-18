@@ -115,7 +115,7 @@ __asm void TIMER0_IRQHandler(void)
 	PUSH{r4-r11, lr}
 	BL c_TIMER0_IRQHandler
 	;BL __enable_irq
-	BL k_release_processor
+	;BL k_release_processor
 	POP{r4-r11, pc}
 }
 
@@ -141,6 +141,10 @@ void c_TIMER0_IRQHandler(void)
 	while (message_ready()){
 		env = timer_dequeue();
 		timer_send_message(env);
+	}
+	
+	if (exists_higher_priority_ready_process()) {
+		k_release_processor();
 	}
 }
 

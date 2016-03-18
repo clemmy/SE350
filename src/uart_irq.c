@@ -171,17 +171,25 @@ int uart_irq_init(int n_uart) {
 __asm void UART0_IRQHandler(void)
 {
 	PRESERVE8
-	IMPORT c_UART0_IRQHandler
+	IMPORT c_UART0_IRQHandler_wrapper
 	IMPORT k_release_processor
 	IMPORT __disable_irq
 	IMPORT __enable_irq
 	;BL __disable_irq
 	PUSH{r4-r11, lr}
-	BL c_UART0_IRQHandler
+	BL c_UART0_IRQHandler_wrapper
 	;BL __enable_irq
 	;BL k_release_processor
 	POP{r4-r11, pc}
 } 
+
+void c_UART0_IRQHandler_wrapper() {
+	c_UART0_IRQHandler();
+	if (exists_higher_priority_ready_process()) {
+		k_release_processor();
+	}
+}
+
 /**
  * @brief: c UART0 IRQ Handler
  */

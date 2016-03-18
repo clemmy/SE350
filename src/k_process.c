@@ -119,9 +119,11 @@ PCB* processDequeue(PCBQ pq[])
  */
 void makeReady()
 {
-  PCB* thePCB = processDequeue(BlockPQ);
-  thePCB->m_state = RDY;
-  processEnqueue(ReadyPQ, thePCB);
+	while (!blockPQIsEmpty()) {
+		PCB* thePCB = processDequeue(BlockPQ);
+		thePCB->m_state = RDY;
+		processEnqueue(ReadyPQ, thePCB);
+	}
   k_release_processor();
 }
 
@@ -140,10 +142,8 @@ void makeBlock()
 int queueIsEmpty(PCBQ pq[]) {
   int i;
   for (i = 0; i < NUM_OF_PRIORITIES; i++) {
-		for (PCB* cur = pq[i].head; cur != NULL; cur = cur->nextPCB) {
-			if (cur->m_priority <= gp_current_process->m_priority) {
-				return 0;
-			}
+		if (pq[i].head != NULL) {
+			return 0;
 		}
   }
   return 1;
@@ -344,6 +344,15 @@ int k_release_processor(void)
   }
   process_switch(p_pcb_old);
   return RTX_OK;
+}
+
+int exists_higher_priority_ready_process() {
+	for (int i = 0; i < NUM_OF_PRIORITIES; i++){
+    if (pq[i].head != NULL && i > gp_current_process->m_priority){
+      return 1;
+    }
+  }
+	return 0;
 }
 
 /**
