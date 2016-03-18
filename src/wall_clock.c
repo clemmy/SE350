@@ -24,6 +24,9 @@ char intToChar(int i) {
  * Returns time in seconds
  */
 int parseTime(char* timeStr) {
+		if (timeStr[2] != ':' || timeStr[5] != ':') {
+				return 0;
+		}
     int hours = charToInt(timeStr[0]) * 10 + charToInt(timeStr[1]);
     int minutes = charToInt(timeStr[3]) * 10 + charToInt(timeStr[4]);
     int seconds = charToInt(timeStr[6]) * 10 + charToInt(timeStr[7]);
@@ -40,7 +43,7 @@ void timeToStr(int time, char* dest) {
     int minutes = time / 60;
     int seconds = time % 60;
 
-    hours %= 100; // ensures hours is between 0 and 99
+    hours %= 24; // ensures hours is between 0 and 99
 
     dest[0] = intToChar(hours / 10);
     dest[1] = intToChar(hours % 10);

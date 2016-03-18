@@ -52,6 +52,31 @@ extern void UART0_IRQHandler(void);
 
 
 /**
+ * @brief: a process that
+ *         yields the cpu.
+ */
+/*void procA(void)
+{
+  while (1) {
+    k_release_processor();
+  }
+}
+
+void procB(void)
+{
+  while (1) {
+    k_release_processor();
+  }
+}
+
+void procC(void)
+{
+  while (1) {
+    k_release_processor();
+  }
+}*/
+
+/**
  * @brief: Enqueues the PCB into its corresponding queue (based on priority)
  */
 void processEnqueue(PCBQ pq[], PCB* thePCB)
@@ -115,9 +140,11 @@ void makeBlock()
 int queueIsEmpty(PCBQ pq[]) {
   int i;
   for (i = 0; i < NUM_OF_PRIORITIES; i++) {
-    if (pq[i].head != NULL) {
-      return 0;
-    }
+		for (PCB* cur = pq[i].head; cur != NULL; cur = cur->nextPCB) {
+			if (cur->m_priority <= gp_current_process->m_priority) {
+				return 0;
+			}
+		}
   }
   return 1;
 }

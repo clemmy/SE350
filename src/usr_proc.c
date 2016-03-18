@@ -30,6 +30,8 @@ void set_test_procs() {
 		g_test_procs[i].m_priority=MEDIUM;
 		g_test_procs[i].m_stack_size=0x100;
 	}
+	
+	g_test_procs[1].m_priority=LOW;
   
 	g_test_procs[0].mpf_start_pc = &proc1;
 	g_test_procs[1].mpf_start_pc = &proc2;
@@ -58,11 +60,43 @@ void printTestStatus(int testNumber, int pass){
 	testsRan++;
 }
 
+void proc1(void) {
+	
+	void* blk1 = request_memory_block();
+	void* blk2 = request_memory_block();
+	void* blk3 = request_memory_block();
+	void* blk4 = request_memory_block();
+	void* blk5 = request_memory_block();
+	
+	set_process_priority(2, 0);
+	release_processor();
+	set_process_priority(2, 2);
+	set_process_priority(3, 3);
+	set_process_priority(4, 2);
+	
+	release_memory_block(blk1);
+	release_memory_block(blk2);
+	release_memory_block(blk3);
+	release_memory_block(blk4);
+	release_memory_block(blk5);
+	
+	while (1);
+	
+}
+
+void proc2(void){
+	
+	while (1){
+		request_memory_block();
+	}
+	
+}
+
 /**
  * @brief: a process that prints results and yields the CPU if not done
  *         
  */
-void proc1(void){
+void proc1_t(void){
 	
 	uart1_put_string("G030_test: START\n\r");
 	
@@ -91,7 +125,7 @@ void proc1(void){
 	while (1);
 }
 
-void proc2(void) {
+void proc2_t(void) {
 	
 	while (!ready){
 		release_processor();
@@ -122,6 +156,12 @@ void proc2(void) {
 }
 void proc3(void) {
 	
+	while (1) {
+		int sender;
+		receive_message(&sender);
+		release_processor();
+	}
+	
 	while (!ready){
 		release_processor();
 	}
@@ -151,6 +191,13 @@ void proc3(void) {
 }
 
 void proc4(void) {
+	
+	while (1) {
+		int sender;
+		receive_message(&sender);
+		release_processor();
+	}
+	
 	while (testsRan < 1 || !ready){
 		release_processor();
 	}
@@ -221,6 +268,11 @@ void proc4(void) {
 }
 
 void proc5(void) {
+	
+	while (1) {
+		release_processor();
+	}
+	
 	while (testsRan < 2 || !ready){
 		release_processor();
 	}
