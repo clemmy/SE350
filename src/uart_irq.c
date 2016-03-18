@@ -29,6 +29,7 @@ int msg_str_index = 0;
 //extern uint32_t g_switch_flag;
 
 extern int k_release_processor(void);
+extern int exists_higher_priority_ready_process(void);
 /**
  * @brief: initialize the n_uart
  * NOTES: It only supports UART0. It can be easily extended to support UART1 IRQ.
@@ -183,12 +184,6 @@ __asm void UART0_IRQHandler(void)
 	POP{r4-r11, pc}
 } 
 
-void c_UART0_IRQHandler_wrapper() {
-	c_UART0_IRQHandler();
-	if (exists_higher_priority_ready_process()) {
-		k_release_processor();
-	}
-}
 
 /**
  * @brief: c UART0 IRQ Handler
@@ -289,6 +284,13 @@ void c_UART0_IRQHandler(void)
 #endif // DEBUG_0
 		return;
 	}	
+}
+
+void c_UART0_IRQHandler_wrapper() {
+	c_UART0_IRQHandler();
+	if (exists_higher_priority_ready_process()) {
+		k_release_processor();
+	}
 }
 
 void enable_UART_transmit(void) {

@@ -16,3 +16,8 @@ os.uvgui.*
 os.plg
 .*.swp
 GitPortable/
+!usr_proc_t3-1.o
+!usr_proc_t3-2.o
+!usr_proc_t3-3.o
+!usr_proc_t3-4.o
+
