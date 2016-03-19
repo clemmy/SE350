@@ -9,7 +9,7 @@ void error_handler(void) {
 	MSG_BUF* msg = (MSG_BUF*) request_memory_block();
 	msg->mtype = DEFAULT;
 	
-	copyStr("Error: Invalid Parameter", msg->mtext);
+	copyStr("Error: Invalid Parameter\n\r", msg->mtext);
 	
 	send_message(PID_CRT, msg);
 }
@@ -42,8 +42,8 @@ void setPriorityProc(void) {
 			if (0 <= procIdChar2 && procIdChar2 <= 9) {
 				procId = procId * 10 + procIdChar2;
 			}
-			else if (!(procIdChar2 == ' ' || procIdChar2 == '\t' ||
-							 procIdChar2 == '\n' || procIdChar2 == '\r')) {
+			else if (!(*procIdStart == ' ' || *procIdStart == '\t' ||
+							 *procIdStart == '\n' || *procIdStart == '\r')) {
 				error_handler();
 				continue;
 			}
@@ -57,6 +57,12 @@ void setPriorityProc(void) {
 			}
 			
 			int newPriority = charToInt(*newPriorityChar);
+			
+			newPriorityChar++;
+			if (nextNonWhitespace(newPriorityChar) != NULL) {
+				error_handler();
+				continue;
+			}
 			
 			int returnCode = set_process_priority(procId, newPriority);
 			

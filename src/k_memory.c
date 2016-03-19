@@ -141,9 +141,7 @@ U32 *alloc_stack(U32 size_b)
 }
 
 // pops an available memory block from the linked list of available memory blocks in the heap
-void *k_request_memory_block(void) {
-  MemBlock* prevHead;
-	
+void *k_request_memory_block(void) {	
 #ifdef DEBUG_MEM
 	uart1_put_string("Blocks remaining req_before: ");
 	int n = getNumFreeBlocks();
@@ -156,11 +154,13 @@ void *k_request_memory_block(void) {
 #ifdef DEBUG_0
   printf("k_request_memory_block: entering...\n");
 #endif /* ! DEBUG_0 */
-  prevHead = memQueue.head;
+  
 
   while (memQueue.head == NULL) {
     makeBlock();
   }
+	
+	MemBlock* prevHead = memQueue.head;
 
   if (memQueue.head == memQueue.tail) {
     memQueue.tail = NULL;
@@ -183,7 +183,7 @@ void *k_request_memory_block(void) {
 }
 
 void *k_request_memory_block_non_blocking(void) {
-  MemBlock* prevHead;
+  
 
 #ifdef DEBUG_MEM
 	uart1_put_string("Blocks remaining req_nb_before: ");
@@ -197,12 +197,13 @@ void *k_request_memory_block_non_blocking(void) {
 #ifdef DEBUG_0
   printf("k_request_memory_block_non_blocking: entering...\n");
 #endif /* ! DEBUG_0 */
-  prevHead = memQueue.head;
 
   if (memQueue.head == NULL) {
     return NULL;
   }
-
+	
+	MemBlock* prevHead = memQueue.head;
+	
   if (memQueue.head == memQueue.tail) {
     memQueue.tail = NULL;
     memQueue.head = NULL;

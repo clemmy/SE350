@@ -54,7 +54,7 @@ extern void UART0_IRQHandler(void);
 /**
  * @brief: a process that
  *         yields the cpu.
- */
+ *//*
 void procA(void)
 {
   while (1) {
@@ -74,7 +74,7 @@ void procC(void)
   while (1) {
     k_release_processor();
   }
-}
+}*/
 
 /**
  * @brief: Enqueues the PCB into its corresponding queue (based on priority)
@@ -181,22 +181,22 @@ void process_init()
   }
 	
 	g_proc_table[PID_A].m_pid = PID_A;
-  g_proc_table[PID_A].m_priority = LOW;
+  g_proc_table[PID_A].m_priority = HIGH;
   g_proc_table[PID_A].m_stack_size = 0x100;
   g_proc_table[PID_A].mpf_start_pc = &procA;
 	
 	g_proc_table[PID_B].m_pid = PID_B;
-  g_proc_table[PID_B].m_priority = LOW;
+  g_proc_table[PID_B].m_priority = HIGH;
   g_proc_table[PID_B].m_stack_size = 0x100;
   g_proc_table[PID_B].mpf_start_pc = &procB;
 	
 	g_proc_table[PID_C].m_pid = PID_C;
-  g_proc_table[PID_C].m_priority = LOW;
+  g_proc_table[PID_C].m_priority = HIGH;
   g_proc_table[PID_C].m_stack_size = 0x100;
   g_proc_table[PID_C].mpf_start_pc = &procC;
 	
 	g_proc_table[PID_SET_PRIO].m_pid = PID_SET_PRIO;
-  g_proc_table[PID_SET_PRIO].m_priority = LOW;
+  g_proc_table[PID_SET_PRIO].m_priority = HIGH;
   g_proc_table[PID_SET_PRIO].m_stack_size = 0x100;
   g_proc_table[PID_SET_PRIO].mpf_start_pc = &setPriorityProc;
 	

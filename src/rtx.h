@@ -5,6 +5,8 @@
 #ifndef RTX_H_
 #define RTX_H_
 
+#include "msg_buf.h"
+
 /* ----- Definitations ----- */
 #define RTX_ERR -1
 #define NULL 0
@@ -50,13 +52,6 @@ typedef struct proc_init
 	int m_stack_size;       /* size of stack in words */
 	void (*mpf_start_pc) ();/* entry point of the process */    
 } PROC_INIT;
-
-/* message buffer */
-typedef struct msgbuf
-{
-	int mtype;              /* user defined message type */
-	char mtext[1];          /* body of the message */
-} MSG_BUF;
 
 /* ----- RTX User API ----- */
 #define __SVC_0  __svc_indirect(0)

@@ -204,6 +204,8 @@ void c_UART0_IRQHandler(void)
 		g_char_in = pUart->RBR;
 		
 		if (g_char_in == '\0') {
+			pUart->IER &= ~IER_RBR;
+			pUart->IER |= IER_RBR;
 			return;
 		}
 		
