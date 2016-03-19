@@ -11,6 +11,24 @@ extern MSG_BUF* pcbs_in_state (int state);
 
 typedef enum {NEW = 0, RDY, RUN, BLK, WAIT} PROC_STATE_E;
 
+char* nextNonWhitespace(char* cur) {
+    for (int i = 0; cur[i] != '\0'; i++) {
+        if (cur[i] != ' ' && cur[i] != '\t' && cur[i] != '\n' && cur[i] != '\r') {
+            return cur + i;
+        }
+    }
+    return NULL;
+}
+
+int charToInt(char c) {
+    return c - '0';
+}
+
+char intToChar(int i) {
+    return i + '0';
+}
+
+
 void copyStr(char* src, char* dest) {
     while (1) {
         *dest = *src;

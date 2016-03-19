@@ -3,10 +3,22 @@
 #include "k_process.h"
 #include "timer.h"
 
+#ifdef DEBUG_MEM
+#include "uart_polling.h"
+#endif
+
 int k_send_message(int process_id, void* message_envelope) {
 	
 	PCB* thePCB;
 	envelope* env;
+	
+	#ifdef DEBUG_MEM
+	uart1_put_string("Message sent preempt: ");
+	for (int i = 0; i < 10 && ((MSG_BUF*) message_envelope)->mtext[i] != '\0'; i++) {
+		uart1_put_char(((MSG_BUF*) message_envelope)->mtext[i]);
+	}
+	uart1_put_string("\n\r");
+	#endif
 	
 	env = (envelope*) message_envelope - 1;
 	env->next = NULL;
@@ -60,6 +72,14 @@ void* k_receive_message(int* sender_id) {
 }
 
 int k_send_message_non_preempt(int process_id, void* message_envelope) {
+	
+	#ifdef DEBUG_MEM
+	uart1_put_string("Message sent non-preempt: ");
+	for (int i = 0; i < 10 && ((MSG_BUF*) message_envelope)->mtext[i] != '\0'; i++) {
+		uart1_put_char(((MSG_BUF*) message_envelope)->mtext[i]);
+	}
+	uart1_put_string("\n\r");
+	#endif
 	
 	PCB* thePCB;
 	envelope* env;

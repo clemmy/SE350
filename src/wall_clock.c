@@ -2,22 +2,10 @@
 #include "uart_polling.h"
 #define TIME_DELAY 1000
 
-int nextNonWhitespace(char* cur) {
-    for (int i = 0; cur[i] != '\0'; i++) {
-        if (cur[i] != ' ' && cur[i] != '\t' && cur[i] != '\n' && cur[i] != '\r') {
-            return i;
-        }
-    }
-    return -1;
-}
-
-int charToInt(char c) {
-    return c - '0';
-}
-
-char intToChar(int i) {
-    return i + '0';
-}
+extern char* nextNonWhitespace(char* cur);
+extern int charToInt(char c);
+extern char intToChar(int i);
+extern void copyStr(char* src, char* dest);
 
 /**
  * Time format: hh:mm:ss
@@ -61,9 +49,7 @@ void timeToStr(int time, char* dest) {
 void wallClockProc() {
     MSG_BUF* msg = (MSG_BUF*) request_memory_block();
     msg->mtype = KCD_REG;
-    msg->mtext[0] = '%';
-    msg->mtext[1] = 'W';
-    msg->mtext[2] = '\0';
+		copyStr("%W", msg->mtext);
     send_message(PID_KCD, msg);
 
     int time = 0;
@@ -101,16 +87,17 @@ void wallClockProc() {
                 send_message(PID_CRT, printMsg);
             }
             else {
-													if (msg == NULL) {
-														uart1_put_string("msg == NULL");
-						}
                 release_memory_block((void*) msg);
             }
         }
         else if (command == 'S') {
             incrementorID++;
-            int offset = nextNonWhitespace(msg->mtext + 3) + 3;
-            time = parseTime(msg->mtext + offset);
+            char* timeStart = nextNonWhitespace(msg->mtext + 3);
+						if (timeStart == NULL) {
+							release_memory_block((void*) msg);
+							continue;
+						}
+            time = parseTime(timeStart);
             msg->mtype = DEFAULT;
             msg->mtext[0] = '%';
             msg->mtext[1] = 'W';
@@ -126,15 +113,9 @@ void wallClockProc() {
         }
         else if (command == 'T') {
             incrementorID++;
-											if (msg == NULL) {
-														uart1_put_string("msg == NULL");
-						}
             release_memory_block((void*) msg);
         }
         else {
-											if (msg == NULL) {
-														uart1_put_string("msg == NULL");
-						}
             release_memory_block((void*) msg);
         }
     }

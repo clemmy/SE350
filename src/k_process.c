@@ -405,8 +405,8 @@ int k_set_process_priority(int process_id, int priority){
   int i;
   int old_priority;
   PCB* thePCB;
-  if (0 <= priority && priority < NUM_OF_PRIORITIES - 1) {
-    for (i = 1; i < NUM_PROCS; i++){
+  if (HIGH <= priority && priority <= LOWEST) {
+    for (i = 1; i <= PID_CRT; i++){
       thePCB = gp_pcbs[i];
       if (thePCB->m_pid == process_id){
         #ifdef DEBUG_0

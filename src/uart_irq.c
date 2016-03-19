@@ -202,6 +202,12 @@ void c_UART0_IRQHandler(void)
 	if (IIR_IntId & IIR_RDA) { // Receive Data Avaialbe
 		/* read UART. Read RBR will clear the interrupt */
 		g_char_in = pUart->RBR;
+		
+		if (g_char_in == '\0') {
+			return;
+		}
+		
+		
 #ifdef DEBUG_0
 		uart1_put_string("Reading a char = ");
 		uart1_put_char(g_char_in);
@@ -237,6 +243,12 @@ void c_UART0_IRQHandler(void)
 		
 		// if reached newline or if mtext out of space, send message
 		if (g_char_in == '\r' || msg_str_index > (BLOCK_SIZE - sizeof(envelope) - sizeof(MSG_BUF) - 10)) {
+			#ifdef DEBUG_MEM
+			if (g_char_in != '\r') {
+				uart1_put_string("Message Size Overflow\n");
+			}
+			#endif
+			
 			MSG_BUF* copy = cur_msg;
 
 			copy->mtext[msg_str_index] = '\0';
