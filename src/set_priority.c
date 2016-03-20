@@ -3,7 +3,7 @@
 extern char* nextNonWhitespace(char* cur);
 extern int charToInt(char c);
 extern char intToChar(int i);
-extern void copyStr(char* src, char* dest);
+extern char* copyStr(char* src, char* dest);
 
 void error_handler(void) {
 	MSG_BUF* msg = (MSG_BUF*) request_memory_block();

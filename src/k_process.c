@@ -40,6 +40,8 @@ U32 g_switch_flag = 0;          /* whether to continue to run the process before
 /* process initialization table */
 PROC_INIT g_proc_table[NUM_PROCS];
 
+extern char* copyStr(char* src, char* dest);
+
 extern void procA(void);
 extern void procB(void);
 extern void procC(void);
@@ -114,6 +116,15 @@ PCB* processDequeue(PCBQ pq[])
   return NULL;
 }
 
+int exists_higher_priority_ready_process() {
+	for (int i = 0; i < NUM_OF_PRIORITIES; i++){
+    if (ReadyPQ[i].head != NULL && i < gp_current_process->m_priority){
+      return 1;
+    }
+  }
+	return 0;
+}
+
 /**
  * @brief: Transfers the highest priority PCB from the block queue to the ready queue
  */
@@ -124,7 +135,9 @@ void makeReady()
 		thePCB->m_state = RDY;
 		processEnqueue(ReadyPQ, thePCB);
 	}
-  k_release_processor();
+	if(exists_higher_priority_ready_process()){
+		k_release_processor();
+	}
 }
 
 /**
@@ -181,17 +194,17 @@ void process_init()
   }
 	
 	g_proc_table[PID_A].m_pid = PID_A;
-  g_proc_table[PID_A].m_priority = HIGH;
+  g_proc_table[PID_A].m_priority = LOW;
   g_proc_table[PID_A].m_stack_size = 0x100;
   g_proc_table[PID_A].mpf_start_pc = &procA;
 	
 	g_proc_table[PID_B].m_pid = PID_B;
-  g_proc_table[PID_B].m_priority = HIGH;
+  g_proc_table[PID_B].m_priority = LOW;
   g_proc_table[PID_B].m_stack_size = 0x100;
   g_proc_table[PID_B].mpf_start_pc = &procB;
 	
 	g_proc_table[PID_C].m_pid = PID_C;
-  g_proc_table[PID_C].m_priority = HIGH;
+  g_proc_table[PID_C].m_priority = LOW;
   g_proc_table[PID_C].m_stack_size = 0x100;
   g_proc_table[PID_C].mpf_start_pc = &procC;
 	
@@ -347,15 +360,6 @@ int k_release_processor(void)
   return RTX_OK;
 }
 
-int exists_higher_priority_ready_process() {
-	for (int i = 0; i < NUM_OF_PRIORITIES; i++){
-    if (ReadyPQ[i].head != NULL && i < gp_current_process->m_priority){
-      return 1;
-    }
-  }
-	return 0;
-}
-
 /**
  * @brief moves pcb to its correct queue (for the case where a process changes another process' priority)
  */
@@ -472,43 +476,24 @@ void nullProc(void)
  */
 MSG_BUF* pcbs_in_state (int state){
 	MSG_BUF* msg = (MSG_BUF *)k_request_memory_block_non_blocking();
-	msg->mtype = DEFAULT;
-	int str_index = 0;
-	
 	if (msg == NULL){
 		return NULL;
 	}
+	msg->mtype = DEFAULT;
+	
+	char* str_end = copyStr("PID PRI\n\r", msg->mtext);
+	int str_index = str_end - msg->mtext;
 	
 	for (int i = 0; i < NUM_PROCS; i++){
 			if (gp_pcbs[i]->m_state == state){
-				msg->mtext[str_index] = 'P';
-				str_index++;
-				msg->mtext[str_index] = 'I';
-				str_index++;
-				msg->mtext[str_index] = 'D';
-				str_index++;
-				msg->mtext[str_index] = ':';
-				str_index++;
-				msg->mtext[str_index] = ' ';
-				str_index++;
 				msg->mtext[str_index] = gp_pcbs[i]->m_pid / 10 + '0';
-				str_index++;
+				str_index++;				
 				msg->mtext[str_index] = gp_pcbs[i]->m_pid % 10 + '0';
 				str_index++;
-				msg->mtext[str_index] = ',';
-				str_index++;
+
 				msg->mtext[str_index] = ' ';
 				str_index++;
-				msg->mtext[str_index] = 'P';
-				str_index++;
-				msg->mtext[str_index] = 'R';
-				str_index++;
-				msg->mtext[str_index] = 'I';
-				str_index++;
-				msg->mtext[str_index] = ':';
-				str_index++;
-				msg->mtext[str_index] = ' ';
-				str_index++;
+
 				msg->mtext[str_index] = gp_pcbs[i]->m_priority + '0';
 				str_index++;
 				msg->mtext[str_index] = '\n';

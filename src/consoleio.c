@@ -29,12 +29,12 @@ char intToChar(int i) {
 }
 
 
-void copyStr(char* src, char* dest) {
+char* copyStr(char* src, char* dest) {
     while (1) {
         *dest = *src;
 
         if (*dest == '\0') {
-            break;
+            return dest;
         }
         src++;
         dest++;
@@ -87,9 +87,6 @@ void kcdProc() {
             }
 						
             if (recv_id == -1) {
-						if (msg == NULL) {
-														uart1_put_string("msg == NULL");
-						}
                 release_memory_block((void*) msg);
             }
             else {
@@ -134,9 +131,6 @@ void crtProc() {
 				// enable transmit interrupts				
 				enable_UART_transmit();
 
-									if (msg == NULL) {
-														uart1_put_string("msg == NULL");
-						}
         release_memory_block((void*) msg);
     }
 }

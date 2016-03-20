@@ -12,6 +12,8 @@
 
 /*----- Definitations -----*/
 
+#define BLOCK_SIZE 128
+
 #define RTX_ERR -1
 #define RTX_OK  0
 
