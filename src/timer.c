@@ -15,6 +15,7 @@
 #define BIT(X) (1<<X)
 
 volatile uint32_t g_timer_count = 0; // increment every 1 ms
+volatile uint32_t g_timer2_count = 0;
 timerQ Q;
 extern int exists_higher_priority_ready_process(void);
 
@@ -60,9 +61,14 @@ uint32_t timer_init(uint8_t n_timer)
 		-----------------------------------------------------
 		*/
 		pTimer = (LPC_TIM_TypeDef *) LPC_TIM0;
+		
+		g_timer_count = 0;
 
 	} else { /* other timer not supported yet */
-		return 1;
+		
+		pTimer = (LPC_TIM_TypeDef *) LPC_TIM1;
+		
+		g_timer2_count = 0;
 	}
 
 	/*
@@ -74,10 +80,27 @@ uint32_t timer_init(uint8_t n_timer)
 	/* Step 4.1: Prescale Register PR setting 
 	   CCLK = 100 MHZ, PCLK = CCLK/4 = 25 MHZ
 	   2*(12499 + 1)*(1/25) * 10^(-6) s = 10^(-3) s = 1 ms
+		 2*(12 + 1)*(1/25) * 10^(-6) s = 10^(-3) s = 1.04 microseconds
+	   Memory Timing:
+			0x88 cycles of timer1 to request memory 70 times
+			This is 141.44 microseconds total, 2.02 microseconds per request
+	   Send Message Timing:
+			82 cycles to send 70 messages
+			This is 85.28 microseconds total, 1.22 microseconds per send
+	   Receive Message Timing:
+			116 cycles to receive 70 messages
+			This is 120.64 microseconds total, 1.72 microseconds per receive
+			
+			
 	   TC (Timer Counter) toggles b/w 0 and 1 every 12500 PCLKs
 	   see MR setting below 
 	*/
-	pTimer->PR = 12499;  
+	if (n_timer == 0){
+	    pTimer->PR = 12499;
+	}
+	else {
+	    pTimer->PR = 12;
+	}
 
 	/* Step 4.2: MR setting, see section 21.6.7 on pg496 of LPC17xx_UM. */
 	pTimer->MR0 = 1;
@@ -89,10 +112,15 @@ uint32_t timer_init(uint8_t n_timer)
 	*/
 	pTimer->MCR = BIT(0) | BIT(1);
 
-	g_timer_count = 0;
+	
 
 	/* Step 4.4: CSMSIS enable timer0 IRQ */
-	NVIC_EnableIRQ(TIMER0_IRQn);
+	if(n_timer == 0){
+		NVIC_EnableIRQ(TIMER0_IRQn);
+	}
+	else {
+		NVIC_EnableIRQ(TIMER1_IRQn);
+	}
 
 	/* Step 4.5: Enable the TCR. See table 427 on pg494 of LPC17xx_UM. */
 	pTimer->TCR = 1;
@@ -121,6 +149,21 @@ __asm void TIMER0_IRQHandler(void)
 	;BL k_release_processor
 	POP{r4-r11, pc}
 }
+
+__asm void TIMER1_IRQHandler(void) {
+	PRESERVE8
+	IMPORT c_TIMER1_IRQHandler
+	PUSH{r4-r11, lr}
+	BL c_TIMER1_IRQHandler
+	POP{r4-r11, pc}
+}
+
+void c_TIMER1_IRQHandler(void) {
+	LPC_TIM1->IR = BIT(0);  
+	g_timer2_count++;
+}
+
+
 
 /**
  * @brief: c TIMER0 IRQ Handler
