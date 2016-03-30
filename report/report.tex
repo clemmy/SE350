@@ -60,22 +60,26 @@ It is aimed to provide documentation for the operating system, in order to facil
 
 \chapter{Design Description}
 
-\section{Data Structures}
+\section{Global Variables and Data Structures}
 \begin{itemize}
-  \item \texttt{MemBlock}: a node that represents a block of memory, with its size defined by the global, \texttt{BLOCK_SIZE}
-  \item \texttt{MemQueue}: a data structure which models the physical memory available to the OS, using a linked list of \texttt{MemBlock} nodes.
-
-  \item \texttt{PCB}
-  \item \texttt{PCBQ}
-  \item \texttt{envelope}
-  \item \texttt{gp_pcbs}
-\end{itemize}
-
-\section{Global Variables}
-\begin{itemize}
-  \item \texttt{memQueue}:
-  \item \texttt{gp_pcbs}:
-  \item \texttt{gp_stack}
+  \item \texttt{memQueue}: A data structure that models the free physical memory in the OS, by splitting the heap into blocks of equal size. It is represented by a \texttt{MemQueue} data structure, which is a linked list of \texttt{MemBlock} nodes of size \texttt{BLOCK_SIZE}. It is used by the kernel API when releasing and requesting memory, by popping a block when it is used by a process, and pushing it back in when it is released.
+    \begin{itemize}
+      \item \texttt{MemBlock}: To expand, the \texttt{MemBlock} is a C-struct that holds a pointer to the next \texttt{MemBlock} in the queue. It also has reserved space in the front in case the block needs to hold an envelope.
+    \end{itemize}
+  \item \texttt{gp_pcbs}: A pointer to an array of \texttt{PCB} structs. It holds the state of all the process control blocks that are in the OS, and is interacted with by functions that change and read PCB states. For example, setting the process priority or getting the process priority uses \texttt{gp_pcbs} to access the priority of a specific PCB.
+    \begin{itemize}
+      \item \texttt{PCB}: a model of a process and its state. The \texttt{PCB} contains the following fields:
+        \begin{itemize}
+          \item \texttt{mp_sp}: stack pointer of the process
+          \item \texttt{m_pid}: ID of the process
+          \item \texttt{m_priority}: priority of the process
+          \item \texttt{m_state}: state of the process
+          \item \texttt{nextPCB}: pointer to the next \texttt{PCB}, if it is in a queue
+          \item \texttt{msgHead}: beginning of the message queue
+          \item \texttt{msgTail}: end of the message queue
+        \end{itemize}
+    \end{itemize}
+  \item \texttt{gp_stack}: 
   \item \texttt{p_end}
   \item \texttt{numOfBlocks}
 \end{itemize}
