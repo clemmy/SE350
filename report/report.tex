@@ -206,7 +206,81 @@ sdfasfasfd
 
 \subsection{UART I-Process}
 
-dsfadsfadsfadsf
+The UART interrupt is enabled to send output to a display, and to receive input from the user. The OS handles those interrupts by registering a \texttt{UART0_IRQHandler} function that will be called whenever a UART interrupt occurs. 
+
+The file \texttt{uart_irq.c} is initialized by calling the function \texttt{uart_irq_init}. This function initializes the UART interrupts by setting the appropriate flags and choosing the correct UART port. 
+
+Below is the interrupt handling pseudocode, starting with UART0_IRQHandler:
+\begin{algorithmic}[1]
+  \Function{UART0_IRQHandler}{}
+    \State push registers onto stack
+    \State call c_UART0_IRQHandler_wrapper()
+    \State pop registers off stack
+  \EndFunction
+\end{algorithmic}
+\begin{algorithmic}[1]
+  \Function{c_UART0_IRQHandler_wrapper}{}
+    \State call c_UART0_IRQHandler()
+    \If{there is another ready process with higher priority than the current process}
+      \State call k_release_processor()
+    \EndIf
+  \EndFunction  
+\end{algorithmic}
+\begin{algorithmic}[1]
+  \Function{c_UART0_IRQHandler}{}
+    \If{receive data available}
+      \State g_char_in = newly received char
+      \If{g_char_in == null character} 
+        \State\Return
+      \EndIf
+
+      \State echoMsg = get memory block (non blocking)
+      \If{echoMsg is not null}
+        \State echoMsg-$>$mtype = ECHO
+        \If{g_char_in == '\textbackslash r'}
+          \State echoMsg-$>$mtext = \verb|"\n\r\0"|
+        \Else
+          \State echoMsg-$>$mtext = g_char_in + \verb|'\0'| 
+        \EndIf
+        \State send echoMsg (no preemption) to KCD
+      \EndIf
+      \If{cur_msg is null}
+        \State cur_msg = get memory block (non blocking)
+        \If{cur_msg is null (no more memory)}
+          \State\Return
+        \EndIf
+
+        \State msg_str_index = 0
+      \EndIf
+
+      \If{g_char_in == '\textbackslash r' or message about to overflow memory block}
+        \State cur_msg-$>$mtext += '\textbackslash 0'
+        \State cur_msg-$>$mtype = DEFAULT
+        \State send cur_msg (no preemption) to KCD
+        \State reset cur_msg, msg_str_index
+      \Else
+        \State cur_msg-$>$mtext += g_char_in
+      \EndIf
+    \ElsIf{transmit interrupt enabled}
+      \If{*gp_buffer != null character}
+        \State send *gp_buffer
+        \State gp_buffer = next location in circular buffer
+      \Else
+        \State disable transmit interrupt
+        \State send null character
+        \State reset gp_buffer and g_buffer_end
+      \EndIf
+    \EndIf
+  \EndFunction
+\end{algorithmic}
+
+If there is an incoming character, immediately forward it to the KCD (assuming there is free memory) to echo back to the user. Also, add that character to a buffer. Once a newline is encountered, send the entire buffer to the KCD to decode
+
+If there are still messages in the transmit buffer, send the next character. If the character is a null character, disable the transmit interrupt as the transmission is finished. 
+
+
+Also, there is an \texttt{enable_UART_transmit()} function that sets the appropriate flags to enable the interrupt for outputting characters. This function is called by the CRT to begin outputting characters.
+
 
 \subsection{Timer I-Process}
 
