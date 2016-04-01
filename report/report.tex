@@ -296,7 +296,75 @@ sdfdasfafadsf
 
 \subsection{CRT Process}
 
-sdfdsfafaf
+The CRT's sole responsibility is to output the contents of the messages they receive to the UART.
+
+\begin{algorithmic}[1]
+  \Function{crtProc}{}
+    \While{true}
+      \State msg = receive\_message()
+      \State copy msg-$>$mtext to output buffer
+      \State enable\_UART\_transmit() 
+      \State release\_memory\_block(msg)
+    \EndWhile
+  \EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}[1]
+  \Function{copyToBuffer}{str}
+    \For{each char in str}
+      \State g_buffer[g_buffer_end] = char
+      \State g_buffer_end = (g_buffer_end + 1) mod BUFFER_SIZE
+    \EndFor
+  \EndFunction
+\end{algorithmic}
+
+\subsection{KCD Process}
+
+The KCD's (Keyboard Command Decoder) responsibility is to decode messages that it receives, and forward them to the appropriate process that has registered itself to handle these types of messages. 
+
+\begin{algorithmic}[1]
+  \Function{kcdProc}{}
+    \State identifiers = empty array
+    \State processes = empty array
+    \State numIdentifiers = 0
+    \While{true}
+      \State msg = receive\_message()
+      \If{msg-$>$mtype == KCD\_REG}
+        \State add msg's identifier to identifiers
+        \State add msg's sender to processes
+        \State numIdentifiers++
+        \State release\_message\_block(msg)
+      \ElsIf{msg-$>$mtype == ECHO}
+        \State send\_message(PID\_CRT, msg)
+      \Else
+        \If{msg-$>$mtext starts with '\%'}
+          \State handler = search for handler in identifiers
+        \EndIf
+        \If{no handler for this type of message}
+          \State release\_memory\_block(msg)
+        \Else
+          \State send\_message(handler, msg)
+        \EndIf
+
+        \If{msg-$>$mtext begins with '!'}
+          \State search through PCBs for processes in ready state
+          \State debugMsg = create message with those processes
+          \State send\_message(PID\_CRT, debugMsg)
+        \ElsIf{msg-$>$mtext begins with '@'}
+          \State search through PCBs for processes in blocked state
+          \State debugMsg = create message with those processes
+          \State send\_message(PID\_CRT, debugMsg)
+        \ElsIf{msg-$>$mtext begins with '#'}
+          \State search through PCBs for processes in blocked on message state
+          \State debugMsg = create message with those processes
+          \State send\_message(PID\_CRT, debugMsg)
+        \EndIf
+      \EndIf
+    \EndWhile 
+  \EndFunction
+\end{algorithmic}
+
+This processes repeatedly receives messages. If it is a keyboard command registration, the process saves the identifier along with the process that is registered to handle those commands. If it is an echo command, the message is merely forwarded to the CRT. Otherwise, if the message is an actual command (i.e. it starts with a '\%'), the message is forwarded to the process that is registered to handle it, if it exists. Finally, if the message begins with any debug hotkey, the corresponding debug output is sent to the CRT.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
