@@ -354,7 +354,7 @@ The KCD's (Keyboard Command Decoder) responsibility is to decode messages that i
           \State search through PCBs for processes in blocked state
           \State debugMsg = create message with those processes
           \State send\_message(PID\_CRT, debugMsg)
-        \ElsIf{msg-$>$mtext begins with '#'}
+        \ElsIf{msg-$>$mtext begins with '\#'}
           \State search through PCBs for processes in blocked on message state
           \State debugMsg = create message with those processes
           \State send\_message(PID\_CRT, debugMsg)
@@ -372,7 +372,41 @@ This processes repeatedly receives messages. If it is a keyboard command registr
 
 \subsection{Wall Clock Process}
 
-sdfasdfafadf
+This process receives messages to reset, start at a specified time, and stop the wall clock. Once started, the clock will print the elapsed time every second.
+
+\begin{algorithmic}[1]
+  \Function{wallClockProc}{}
+    \State register itself with KCD to handle '\%W' commands
+    \State id = 0
+    \While{true}
+      \State msg = receive\_message()
+      \If{msg contains reset command}
+        \State id++
+        \State time = 0
+        \State send increment time command to itself, delayed 1 second
+        \State construct time string, send to CRT to print
+      \ElsIf{msg contains increment command}
+        \If{msg's id == id}
+          \State time++
+          \State send increment time command to itself, delayed 1 second
+          \State construct time string, send to CRT to print
+        \Else
+          \State release\_memory\_block(msg)
+        \EndIf
+      \ElsIf{msg contains a start at specified time command}
+        \State id++
+        \State time = parseTime(msg)
+        \State send increment time command to itself, delayed 1 second
+        \State construct time string, send to CRT to print
+      \ElsIf{msg contains stop command}
+        \State id++
+        \State release\_memory\_block(msg)
+      \Else
+        \State release\_memory\_block(msg)
+      \EndIf
+    \EndWhile
+  \EndFunction  
+\end{algorithmic}
 
 \subsection{Set Priority Process}
 
