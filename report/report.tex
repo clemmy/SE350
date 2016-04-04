@@ -92,7 +92,7 @@ It is aimed to provide documentation for the operating system, in order to facil
       \item \texttt{m_stack_size}: size to allocate for the process in words
     \end{itemize}
   The process table is used often during the \texttt{process_init()} function.
-  \item \texttt{gp_stack}: a pointer to the top of the memory heap, which is also the last conceptual memory block in \texttt{memQueue}. It is used during \texttt{heap_init()}.
+    \item \texttt{gp_stack}: a pointer to the top of the memory heap, which is also the last conceptual memory block in \texttt{memQueue}. It is used during \texttt{heap_init()}.
   \item \texttt{p_end}: a pointer to the beginning of the memory heap, which is also the first conceptual memory block in \texttt{memQueue}. It is calculated by starting at \texttt{\&Image\$\$RW_IRAM1\$\$ZI\$\$Limit}, then incrementing it upon PCB initialization in \texttt{memory_init()}.
   \item \texttt{numOfBlocks}: the number of blocks of \texttt{MemBlock} allocated in the \texttt{heap_init()}
   \item \texttt{g_switch_flag}: a boolean flag that indicates whether to continue to run the process before the UART receives an interrupt. If 1, then it will immediately switch, and if it's 0, then it will continue to run the process.
@@ -475,13 +475,9 @@ dsfdafadsf
 
 \section{Source Control and Code Management}
 
-sdfdsafsadf
-
 \chapter{Team Dynamics and Individual Responsibilities}
-
-\section{adsfadsf}
-
-dfasfasdf
+The team members did not enforce a strict task allocation process for deciding each members' responsibilities. Generally however, the scheduling process is similar to the following scenario:
+Upon the initial lab introduction, all four of the members would be present, in order to discuss the material and areas of interest. Then, the members would split into two pairs to work on the parts they chose respectively, using pair programming concepts, and communication both online and offline. If one pair is finished earlier than the other, then they would usually group up with the remaining pair to work through the problem. Otherwise, they would colloratively merge the parts they've worked on into a final workiing product before the deadline.
 
 \chapter{Timing Analysis}
 
