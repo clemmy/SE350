@@ -120,11 +120,20 @@ It is aimed to provide documentation for the operating system, in order to facil
 
 \section{Memory Management}
 
-\subsection{Memory Structure}
+\subsection{Memory Overview}
 
-dsfdasfdsafdsafdsafsadfdsaf
+% The ‘heap’ that the processes request memory blocks from is maintained as a linked list. The length of the heap is exactly enough space for thirty memory blocks of size 0x80 (128 bytes). The number of memory blocks can be configured by modifying the NUM_BLOCKS constant.
+% Free space nodes keep track of the length of free space following this address and a pointer to the next chunk of unclaimed blocks. These headers are written directly into the blocks as they are returned to the heap. They are free to be overwritten, the only safe header is the starting address of the heap. The heap is shifted by four bytes to protect the last block from ever being overwritten.
+% The request and release methods maintain the optimal structure of the list, deleting and overwriting excess or useless nodes.
+
+By keeping track of the \texttt{gp_stack} and \texttt{gp_pcbs} pointers and keeping track of how much memory the \texttt{PCB}s use, then it is possible to do some pointer arithmetic to determine the starting and ending addresses of the heap (the physical memory available to allocate in the RTX).
+
+The implementation of memory management in this RTX involves maintaing a linked list that keeps track of all the available \texttt{MemBlock}s on the heap. Upon process consumption of memory, \texttt{MemBlock}s allocated are removed from the linked list and a reference to the block is kept in the process. Upon release, the \texttt{MemBlock} is appended to the linked list again. This has performance implications of $O(1)$ for deletion and insertion of blocks.
+
+ The \texttt{MemBlock}s have a user-defined size called \texttt{BLOCK_SIZE}. The system also reserves some space in the beginning of \texttt{MemBlock}s for \texttt{envelope}s. By default, the \texttt{BLOCK_SIZE} is set to 128 bytes.
 
 \begin{figure}[h!]
+  \centering
 	\includegraphics{memory.png}
 \caption{Memory Layout}
 
@@ -138,10 +147,10 @@ int k_request_memory_block(void);
 \end{lstlisting}
 \end{minipage}
 
-describe input, output, effects
+This function doesn't take any parameters, and returns the address of an available \texttt{MemBlock}. The algorithm is basically a queue dequeue function. It takes the previous head of \texttt{memQueue}, returns it, then updates the linked list accordingly.
 
 \begin{algorithm}
-  \caption{k_request_memory_block}
+  \caption{Requesting memory function}
   \begin{algorithmic}[1]
     \Procedure{request\_memory\_block}{}
       \While{heap is full}
@@ -161,10 +170,10 @@ int k_release_memory_block(void* memory_block);
 \end{lstlisting}
 \end{minipage}
 
-describe input, output, effects
+This function takes a \texttt{MemBlock} parameter. This parameter is a reference to the \texttt{MemBlock} that will be freed. It also returns a flag on whether that operation was a success or not - \texttt{RTX_ERR} or \texttt{RTX_OK}. The algorithm is basically a queue enqueue function. After some validation logic, it attached the freed memory block to the end of the linked list. It also moves processes into the ready queue if possible.
 
 \begin{algorithm}
-  \caption{The memory release function}
+  \caption{Releasing memory function}
   \begin{algorithmic}[1]
     \Procedure{release\_memory\_block}{*memory_block}
       \If{this block is the top block of the heap}
