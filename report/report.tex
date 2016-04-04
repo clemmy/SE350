@@ -481,7 +481,9 @@ However, when the project was in a more stable state, we later progressed to bra
 One way we could have improved this is by having a systematic review process. Because of the team's lack of periodic code reviews and the fact that we divided the work up, the team did not have the opportunity to learn about work that other team members worked on, resulting in a team whose knowledge was extremely speciaized and exclusive for each individual member. This meant that bugs relating to a certain module can only be understood by some members of the team, which sometimes slowed progress down. To improve on this, the team could have periodic code reviews to keep everyone up to date and knowledgable in all parts of the codebase.
 
 \section{Code Management}
+When the group first started off coding, the code was extremely unmodular, files were monolithic, comments were lacking, and globals were overly used. This made the code quite messy to look at, and as we progressed through the different parts of the lab, we found it increasingly difficult to debug and navigate through our codebase. Somewhere between P2 and P3, we hit a wall where our RTX had some fundamental bugs with regard to scheduling. However, it was very hard to trace this bug down with our style of code. We dedicated a few days to refactoring the code base; we added comments on hard to understand expressions, we tried to reduce the use of global variables if they were not needed, and we separated long functions into smaller re-usable components. The end result was that unit testing was a lot easier.
 
+\section{Logging}
 
 \chapter{Team Dynamics and Individual Responsibilities}
 The team members did not enforce a strict task allocation process for deciding each members' responsibilities. Generally however, the scheduling process is similar to the following scenario:
