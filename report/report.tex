@@ -483,7 +483,8 @@ One way we could have improved this is by having a systematic review process. Be
 \section{Code Management}
 When the group first started off coding, the code was extremely unmodular, files were monolithic, comments were lacking, and globals were overly used. This made the code quite messy to look at, and as we progressed through the different parts of the lab, we found it increasingly difficult to debug and navigate through our codebase. Somewhere between P2 and P3, we hit a wall where our RTX had some fundamental bugs with regard to scheduling. However, it was very hard to trace this bug down with our style of code. We dedicated a few days to refactoring the code base; we added comments on hard to understand expressions, we tried to reduce the use of global variables if they were not needed, and we separated long functions into smaller re-usable components. The end result was that unit testing was a lot easier.
 
-\section{Logging}
+\section{Logging and Output}
+For some memory issues, it was extremely hard to debug. Even when tracing through the debugger, looking at pointer values is not always the most intuitive. In order to make development easier, we decided to add scoped debug flags in our RTX in order to trace bugs without convoluting the output. For example, we had a \texttt{MEM_DEBUG} flag which could be enabled to output the available amount of memory blocks after each transaction in order to debug a memory leak, and have the default \texttt{DEBUG} flag enabled for less specialized debugging. This allowed us to more intuitively track errors down.
 
 \chapter{Team Dynamics and Individual Responsibilities}
 The team members did not enforce a strict task allocation process for deciding each members' responsibilities. Generally however, the scheduling process is similar to the following scenario:
