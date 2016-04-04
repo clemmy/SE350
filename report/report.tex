@@ -64,7 +64,13 @@ It is aimed to provide documentation for the operating system, in order to facil
 \begin{itemize}
   \item \texttt{memQueue}: A data structure that models the free physical memory in the OS, by splitting the heap into blocks of equal size. It is represented by a \texttt{MemQueue} data structure, which is a linked list of \texttt{MemBlock} nodes of size \texttt{BLOCK_SIZE}. It is used by the kernel API when releasing and requesting memory, by popping a block when it is used by a process, and pushing it back in when it is released.
     \begin{itemize}
-      \item \texttt{MemBlock}: To expand, the \texttt{MemBlock} is a C-struct that holds a pointer to the next \texttt{MemBlock} in the queue. It also has reserved space in the front in case the block needs to hold an envelope.
+      \item \texttt{MemBlock}: To expand, the \texttt{MemBlock} is a C-struct that holds a pointer to the next \texttt{MemBlock} in the queue. It also has reserved space in the front in case the block needs to hold an \texttt{envelope}. The \texttt{envelope} contains the following fields:
+        \begin{itemize}
+          \item \texttt{next}: a pointer to the next envelope in the queue
+          \item \texttt{sender_id}: the process ID of the sender
+          \item \texttt{recv_id}: the process ID of the receiver
+          \item \texttt{send_time}: the time it was originally sent at
+        \end{itemize}
     \end{itemize}
   \item \texttt{gp_pcbs}: A pointer to an array of \texttt{PCB} structs. It holds the state of all the process control blocks that are in the OS, and is interacted with by functions that change and read PCB states. For example, setting the process priority or getting the process priority uses \texttt{gp_pcbs} to access the priority of a specific PCB.
     \begin{itemize}
@@ -79,9 +85,37 @@ It is aimed to provide documentation for the operating system, in order to facil
           \item \texttt{msgTail}: end of the message queue
         \end{itemize}
     \end{itemize}
-  \item \texttt{gp_stack}: 
-  \item \texttt{p_end}
-  \item \texttt{numOfBlocks}
+  \item \texttt{g_proc_table}: an array of \texttt{PROC_INIT} structs that contains process information for initialization. The \texttt{PROC_INIT} looks like the following:
+    \begin{itemize}
+      \item \texttt{m_id}: ID of the process
+      \item \texttt{m_priority}: initial priority of the process
+      \item \texttt{m_stack_size}: size to allocate for the process in words
+    \end{itemize}
+  The process table is used often during the \texttt{process_init()} function.
+  \item \texttt{gp_stack}: a pointer to the top of the memory heap, which is also the last conceptual memory block in \texttt{memQueue}. It is used during \texttt{heap_init()}.
+  \item \texttt{p_end}: a pointer to the beginning of the memory heap, which is also the first conceptual memory block in \texttt{memQueue}. It is calculated by starting at \texttt{\&Image\$\$RW_IRAM1\$\$ZI\$\$Limit}, then incrementing it upon PCB initialization in \texttt{memory_init()}.
+  \item \texttt{numOfBlocks}: the number of blocks of \texttt{MemBlock} allocated in the \texttt{heap_init()}
+  \item \texttt{g_switch_flag}: a boolean flag that indicates whether to continue to run the process before the UART receives an interrupt. If 1, then it will immediately switch, and if it's 0, then it will continue to run the process.
+  \item \texttt{gp_current_process}: a pointer to the \texttt{PCB} of the currently running process. It is used in \texttt{process_switch()} among other functions that deal with the current process
+  \item \texttt{ReadyPQ}: a linked list of linked lists of \texttt{PCB} structures. It represents a priority queue of process blocks in the ready queue. This is used for scheduling, for example inside the \texttt{scheduler()} function.
+  \item \texttt{BlockPQ}: a linked list of linked lists of \texttt{PCB} structures. It represents a priority queue of process blocks in the blocked queue. This is used for scheduling, for example inside the \texttt{scheduler()} function.
+  \item \texttt{NUM_OF_PRIORITIES}: a constant that represents the number of priorities in the OS (default = 5). 0-3 represent the normal priorities from highest to lowest, whereas 4 is the priority of the null process.
+  \item \texttt{gp_buffer}: a pointer to the next location \texttt{g_buffer}. It is used in \texttt{c_UART0_IRQHandler()}.
+  \item \texttt{g_buffer}: a circular buffer that keeps track of the input and wraps around at a certain size. It is used in \texttt{kcdProc()} and other functions that deal with uart input.
+  \item \texttt{g_buffer_end}: a pointer to the last location in \texttt{g_buffer}. It is helpful for calculations in \texttt{kcdProc()}.
+  \item \texttt{PROC_STATE_E}: An enum which consists of the states:
+    \begin{itemize}
+      \item \texttt{NEW}: process was just created
+      \item \texttt{RDY}: process is on the ready queue
+      \item \texttt{RUN}: process is currently running
+      \item \texttt{BLK}: process is blocked on memory
+      \item \texttt{WAIT}: process is waiting to receive a message
+    \end{itemize}
+  \item \texttt{MSG_BUF}: It represents a message buffer and is a part of an \texttt{envelope}, with some space in memory blocks reserved for it. It consists of the following fields:
+    \begin{itemize}
+      \item \texttt{mtype}: a user defined message type
+      \item \texttt{mtext}: a \texttt{char} array which contains the body of the message
+    \end{itemize}
 \end{itemize}
 
 \section{Memory Management}
@@ -90,7 +124,7 @@ It is aimed to provide documentation for the operating system, in order to facil
 
 dsfdasfdsafdsafdsafsadfdsaf
 
-\begin{figure}
+\begin{figure}[h!]
 	\includegraphics{memory.png}
 \caption{Memory Layout}
 
@@ -206,9 +240,9 @@ sdfasfasfd
 
 \subsection{UART I-Process}
 
-The UART interrupt is enabled to send output to a display, and to receive input from the user. The OS handles those interrupts by registering a \texttt{UART0_IRQHandler} function that will be called whenever a UART interrupt occurs. 
+The UART interrupt is enabled to send output to a display, and to receive input from the user. The OS handles those interrupts by registering a \texttt{UART0_IRQHandler} function that will be called whenever a UART interrupt occurs.
 
-The file \texttt{uart_irq.c} is initialized by calling the function \texttt{uart_irq_init}. This function initializes the UART interrupts by setting the appropriate flags and choosing the correct UART port. 
+The file \texttt{uart_irq.c} is initialized by calling the function \texttt{uart_irq_init}. This function initializes the UART interrupts by setting the appropriate flags and choosing the correct UART port.
 
 Below is the interrupt handling pseudocode, starting with UART0_IRQHandler:
 \begin{algorithmic}[1]
@@ -224,13 +258,13 @@ Below is the interrupt handling pseudocode, starting with UART0_IRQHandler:
     \If{there is another ready process with higher priority than the current process}
       \State call k_release_processor()
     \EndIf
-  \EndFunction  
+  \EndFunction
 \end{algorithmic}
 \begin{algorithmic}[1]
   \Function{c_UART0_IRQHandler}{}
     \If{receive data available}
       \State g_char_in = newly received char
-      \If{g_char_in == null character} 
+      \If{g_char_in == null character}
         \State\Return
       \EndIf
 
@@ -240,7 +274,7 @@ Below is the interrupt handling pseudocode, starting with UART0_IRQHandler:
         \If{g_char_in == '\textbackslash r'}
           \State echoMsg-$>$mtext = \verb|"\n\r\0"|
         \Else
-          \State echoMsg-$>$mtext = g_char_in + \verb|'\0'| 
+          \State echoMsg-$>$mtext = g_char_in + \verb|'\0'|
         \EndIf
         \State send echoMsg (no preemption) to KCD
       \EndIf
@@ -276,7 +310,7 @@ Below is the interrupt handling pseudocode, starting with UART0_IRQHandler:
 
 If there is an incoming character, immediately forward it to the KCD (assuming there is free memory) to echo back to the user. Also, add that character to a buffer. Once a newline is encountered, send the entire buffer to the KCD to decode
 
-If there are still messages in the transmit buffer, send the next character. If the character is a null character, disable the transmit interrupt as the transmission is finished. 
+If there are still messages in the transmit buffer, send the next character. If the character is a null character, disable the transmit interrupt as the transmission is finished.
 
 
 Also, there is an \texttt{enable_UART_transmit()} function that sets the appropriate flags to enable the interrupt for outputting characters. This function is called by the CRT to begin outputting characters.
@@ -303,7 +337,7 @@ The CRT's sole responsibility is to output the contents of the messages they rec
     \While{true}
       \State msg = receive\_message()
       \State copy msg-$>$mtext to output buffer
-      \State enable\_UART\_transmit() 
+      \State enable\_UART\_transmit()
       \State release\_memory\_block(msg)
     \EndWhile
   \EndFunction
@@ -320,7 +354,7 @@ The CRT's sole responsibility is to output the contents of the messages they rec
 
 \subsection{KCD Process}
 
-The KCD's (Keyboard Command Decoder) responsibility is to decode messages that it receives, and forward them to the appropriate process that has registered itself to handle these types of messages. 
+The KCD's (Keyboard Command Decoder) responsibility is to decode messages that it receives, and forward them to the appropriate process that has registered itself to handle these types of messages.
 
 \begin{algorithmic}[1]
   \Function{kcdProc}{}
@@ -360,7 +394,7 @@ The KCD's (Keyboard Command Decoder) responsibility is to decode messages that i
           \State send\_message(PID\_CRT, debugMsg)
         \EndIf
       \EndIf
-    \EndWhile 
+    \EndWhile
   \EndFunction
 \end{algorithmic}
 
@@ -405,7 +439,7 @@ This process receives messages to reset, start at a specified time, and stop the
         \State release\_memory\_block(msg)
       \EndIf
     \EndWhile
-  \EndFunction  
+  \EndFunction
 \end{algorithmic}
 
 \subsection{Set Priority Process}
