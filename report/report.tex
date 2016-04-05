@@ -682,7 +682,14 @@ dfadsfasdf
 
 \section{Major Design Changes}
 
-dsfdafadsf
+One major change that occurred between P1 and P2 was how the memory blocks were structured. In P1, we returned a pointer to the very first byte in the memory block whenever memory was requested, giving user processes complete access to every byte in the memory block. However, in P2, we discovered that this implementation was no longer feasible. When messages get sent using a memory block, there needs to be space in the block for the OS to store metadata about that message, such as the sender, receiver, etc. Therefore, the major design change was to always leave $x$ bytes at the beginning of each memory block for the kernel to store the metadata, and return a pointer to the beginning of the block + $x$ bytes. This required changing code that assumed it had the entire memory block available to use.
+
+A major stumbling block was a hardfault we were getting in P1. At that time, we did not understand the difference between the difference between \texttt{k_} prefixed functions and non-\texttt{k_} prefixed functions. It took many hours of debugging to realize that the non-\texttt{k_} prefixed functions invoke the SVC Handler, which changed the processor into kernel mode, allowing us to execute priviledged instructions. When calling the \texttt{k_} prefixed functions from a user process, it immediately hardfaulted since it was trying to execute priviledged instructions.
+
+Another issue we ran into in P2 was a interrupt issue where our kernel primitives were being interrupted by the timer and UART i-processes, causing undefined behaviour. This problem was fixed by calling \texttt{__disable_irq()} and \texttt{__enable_irq()} to disable and re-enable interrupts at the beginning and end of kernel primitives.
+
+
+If we were to start this project again, we would like to further improve the modularity of the code by furthering breaking it up into different files. Additionally, our naming conventions are quite inconsistent, and we would like to improve that as well. This would make our code much cleaner and more elegant. 
 
 \chapter{Lessons Learned}
 
