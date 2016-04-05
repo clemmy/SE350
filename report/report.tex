@@ -215,7 +215,7 @@ sdfasdfasdfdasf
 
 \subsection{Get Process Priority}
 
-The get process priority function takes in the process id as a parameter and returns its priority. We denote the priority of -1 if the process is not found. To find the process by its id, we loop through all the pcbs which are stored in gp_pcbs and compare the process_id. If a matching pcb is found, then we retrieve its priority and return. Otherwise, the loop will end without ever finding a process and will -1.
+The get process priority function takes in the process id as a parameter and returns its priority. We denote the priority of -1 if the process is not found. To find the process by its id, we loop through all the pcbs which are stored in gp_pcbs and compare the process_id. If a matching pcb is found, then we retrieve its priority and return. Otherwise, the loop will end without ever finding a process and will return -1.
 
 \begin{algorithm}[H]
   \caption{Get Process Priority}
@@ -659,7 +659,22 @@ This process registers itself with the KCD to handle ``\%C'' commands. It accept
 
 \section{Initialization}
 
-dasfasfasfd
+We initialize the kernel in \texttt{k\_rtx\_init.c}. In the initialization function, we initialize each of:
+\begin{enumerate}
+	\item timer 0
+	\item timer 1
+	\item UART0 interrupt driven
+	\item UART1 polling
+	\item memory
+	\item PCBs
+	\item heap 
+\end{enumerate}
+
+The timers are initialized by setting appropriate configuration parameters such as the freqency. The UART is initialized by enabling UART interrupts and setting configuration parameters. The memory is initialized by allocating space for the each of the PCBs. Then, the fields in PCBs are populated from data in the process table, such as each process's priority, stack size, etc. Then, stack space is allocated in memory based on how much each process requested. Then, all PCBs that require scheduling are placed on the ready queue. Finally, after the PCBs are allocated in the lower memory addresses, and the stacks are allocated in the higher memory addresses, all remaining memory in between is split up into equally sized blocks, to be used as the heap. 
+
+One possible configuration parameter is the \texttt{BLOCK_SIZE} of the heap memory blocks. By default, it is 128 bytes. However, it can be tuned to smaller and larger values to fit the specific use case of the operating system, in order to reduce internal fragmentation.
+
+In addition, user processes can tune their relative priorities to each other, to affect how they are scheduled, and they can request whatever stack size they require to properly function.
 
 \section{Testing}
 
