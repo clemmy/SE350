@@ -590,7 +590,31 @@ This process receives messages to reset, start at a specified time, and stop the
 
 \subsection{Set Priority Process}
 
-dsfasdfasdfadsf
+This process registers itself with the KCD to handle ``\%C'' commands. It accepts as parameters a process id, and the new priority for that process.
+
+\begin{algorithm}[H]
+	\caption{Set Priority Process}
+	\begin{algorithmic}[1]
+	  \Function{setPriorityProc}{}
+	  	\State send message to KCD to register itself to handle ``\%C'' commands
+
+	  	\While{true}
+	  		\State msg = receive new message
+	  		\State parse msg's string to get the process_id and new priority to change to
+	  		\If{error parsing string}
+	  			\State print error message
+	  			\State \textbf{continue}
+	  		\EndIf
+
+	  		\State set_process_priority(process_id, new_priority)
+	  		\If{set_process_priority returned error code}
+	  			\State print error message
+	  		\EndIf
+	  	\EndWhile
+	  \EndFunction
+	\end{algorithmic}
+\end{algorithm}
+
 
 % David - I don't think it's necessary to talk about stress tests
 % \subsection{Stress Test Processes}
