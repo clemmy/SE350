@@ -14,7 +14,7 @@
     tabularx,
     float,
     graphicx,
-	 color
+	  color
 }
 
 \lstset{basicstyle=\footnotesize\ttfamily}
@@ -201,11 +201,10 @@ This function takes a \texttt{MemBlock} parameter. This parameter is a reference
 \section{Processor Management}
 
 \subsection{Process Control Structures}
-DFASFAFD
+awefawef
 
 \subsection{Process Queues}
-
-fsadfasdfadsf
+awefawef
 
 \subsection{Process Scheduling}
 sdfasdfasdfdasf
@@ -216,11 +215,49 @@ sdfasdfasdfdasf
 
 \subsection{Get Process Priority}
 
-asdfadsfasf
+The get process priority function takes in the process id as a parameter and returns its priority. We denote the priority of -1 if the process is not found. To find the process by its id, we loop through all the pcbs which are stored in gp_pcbs and compare the process_id. If a matching pcb is found, then we retrieve its priority and return. Otherwise, the loop will end without ever finding a process and will -1.
+
+\begin{algorithm}[H]
+  \caption{Get Process Priority}
+  \begin{algorithmic}[1]
+  \Function {k_get_process_priority}{process_id}
+  \State int priority = -1;
+  \For {every process in pcb array}
+    \If {process found}
+      \State priority = process.priority;
+      \State return priority;
+     \EndIf
+  \EndFor
+  \State return priority;
+  \EndFunction
+  \end{algorithmic}
+\end{algorithm}
 
 \subsection{Set Process Priority}
 
-dsfasdfasfsfdf
+The set process priority function takes in the process id and a priority as the parameters and returns if the function has completed successfully. First we loop through all the process ids to see if we can find a process that has matching ids. Then if we have found the process, we check to see if the priority that is being set to is different from the priority it's currently at. Now at this stage we store the old priority and set the new one if its not currently executing, otherwise we would undo the priority change if the priority change would somehow fail. Finally, we release the processor since we need to immediately move the higher priority process because of the change.
+
+\begin{algorithm}[H]
+  \caption{Set Process Priority}
+  \begin{algorithmic}[1]
+  \Function {k_set_process_priority}{int process_id, int priority}
+    \If {priority is within valid range}
+      \For {every user process}
+        \If {process found}
+          \If {process.priority is different}
+            \State old_priority = process.priority;
+            \State process.priority = priority;
+            \If {process is not currently executing}
+              \State attempt move the process priority, else undo priority
+            \EndIf     
+            \State release the processor
+          \EndIf
+        \EndIf
+      \EndFor
+    \EndIf
+  \EndFunction
+  \end{algorithmic}
+\end{algorithm}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
