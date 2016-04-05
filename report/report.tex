@@ -149,7 +149,7 @@ int k_request_memory_block(void);
 
 This function doesn't take any parameters, and returns the address of an available \texttt{MemBlock}. The algorithm is basically a queue dequeue function. It takes the previous head of \texttt{memQueue}, returns it, then updates the linked list accordingly.
 
-\begin{algorithm}
+\begin{algorithm}[H]
   \caption{Requesting memory function}
   \begin{algorithmic}[1]
     \Procedure{request\_memory\_block}{}
@@ -172,7 +172,7 @@ int k_release_memory_block(void* memory_block);
 
 This function takes a \texttt{MemBlock} parameter. This parameter is a reference to the \texttt{MemBlock} that will be freed. It also returns a flag on whether that operation was a success or not - \texttt{RTX_ERR} or \texttt{RTX_OK}. The algorithm is basically a queue enqueue function. After some validation logic, it attached the freed memory block to the end of the linked list. It also moves processes into the ready queue if possible.
 
-\begin{algorithm}
+\begin{algorithm}[H]
   \caption{Releasing memory function}
   \begin{algorithmic}[1]
     \Procedure{release\_memory\_block}{*memory_block}
@@ -254,68 +254,79 @@ The UART interrupt is enabled to send output to a display, and to receive input 
 The file \texttt{uart_irq.c} is initialized by calling the function \texttt{uart_irq_init}. This function initializes the UART interrupts by setting the appropriate flags and choosing the correct UART port.
 
 Below is the interrupt handling pseudocode, starting with UART0_IRQHandler:
-\begin{algorithmic}[1]
-  \Function{UART0_IRQHandler}{}
-    \State push registers onto stack
-    \State call c_UART0_IRQHandler_wrapper()
-    \State pop registers off stack
-  \EndFunction
-\end{algorithmic}
-\begin{algorithmic}[1]
-  \Function{c_UART0_IRQHandler_wrapper}{}
-    \State call c_UART0_IRQHandler()
-    \If{there is another ready process with higher priority than the current process}
-      \State call k_release_processor()
-    \EndIf
-  \EndFunction
-\end{algorithmic}
-\begin{algorithmic}[1]
-  \Function{c_UART0_IRQHandler}{}
-    \If{receive data available}
-      \State g_char_in = newly received char
-      \If{g_char_in == null character}
-        \State\Return
-      \EndIf
+\begin{algorithm}[H]
+	\caption{UART Interrupt Handler function (assembly)}
+	\begin{algorithmic}[1]
+	  \Function{UART0_IRQHandler}{}
+	    \State push registers onto stack
+	    \State call c_UART0_IRQHandler_wrapper()
+	    \State pop registers off stack
+	  \EndFunction
+	\end{algorithmic}
+\end{algorithm}
 
-      \State echoMsg = get memory block (non blocking)
-      \If{echoMsg is not null}
-        \State echoMsg-$>$mtype = ECHO
-        \If{g_char_in == '\textbackslash r'}
-          \State echoMsg-$>$mtext = \verb|"\n\r\0"|
-        \Else
-          \State echoMsg-$>$mtext = g_char_in + \verb|'\0'|
-        \EndIf
-        \State send echoMsg (no preemption) to KCD
-      \EndIf
-      \If{cur_msg is null}
-        \State cur_msg = get memory block (non blocking)
-        \If{cur_msg is null (no more memory)}
-          \State\Return
-        \EndIf
+\begin{algorithm}[H]
+	\caption{UART Interrupt Handler function wrapper (C)}
+	\begin{algorithmic}[1]
+	  \Function{c_UART0_IRQHandler_wrapper}{}
+	    \State call c_UART0_IRQHandler()
+	    \If{there is another ready process with higher priority than the current process}
+	      \State call k_release_processor()
+	    \EndIf
+	  \EndFunction
+	\end{algorithmic}
+\end{algorithm}
 
-        \State msg_str_index = 0
-      \EndIf
+\begin{algorithm}[H]
+	\caption{Main UART Interrupt Handler function (C)}
+	\begin{algorithmic}[1]
+	  \Function{c_UART0_IRQHandler}{}
+	    \If{receive data available}
+	      \State g_char_in = newly received char
+	      \If{g_char_in == null character}
+	        \State\Return
+	      \EndIf
 
-      \If{g_char_in == '\textbackslash r' or message about to overflow memory block}
-        \State cur_msg-$>$mtext += '\textbackslash 0'
-        \State cur_msg-$>$mtype = DEFAULT
-        \State send cur_msg (no preemption) to KCD
-        \State reset cur_msg, msg_str_index
-      \Else
-        \State cur_msg-$>$mtext += g_char_in
-      \EndIf
-    \ElsIf{transmit interrupt enabled}
-      \If{*gp_buffer != null character}
-        \State send *gp_buffer
-        \State gp_buffer = next location in circular buffer
-      \Else
-        \State disable transmit interrupt
-        \State send null character
-        \State reset gp_buffer and g_buffer_end
-      \EndIf
-    \EndIf
-  \EndFunction
-\end{algorithmic}
+	      \State echoMsg = get memory block (non blocking)
+	      \If{echoMsg is not null}
+	        \State echoMsg-$>$mtype = ECHO
+	        \If{g_char_in == '\textbackslash r'}
+	          \State echoMsg-$>$mtext = \verb|"\n\r\0"|
+	        \Else
+	          \State echoMsg-$>$mtext = g_char_in + \verb|'\0'|
+	        \EndIf
+	        \State send echoMsg (no preemption) to KCD
+	      \EndIf
+	      \If{cur_msg is null}
+	        \State cur_msg = get memory block (non blocking)
+	        \If{cur_msg is null (no more memory)}
+	          \State\Return
+	        \EndIf
+
+	        \State msg_str_index = 0
+	      \EndIf
+
+	      \If{g_char_in == '\textbackslash r' or message about to overflow memory block}
+	        \State cur_msg-$>$mtext += '\textbackslash 0'
+	        \State cur_msg-$>$mtype = DEFAULT
+	        \State send cur_msg (no preemption) to KCD
+	        \State reset cur_msg, msg_str_index
+	      \Else
+	        \State cur_msg-$>$mtext += g_char_in
+	      \EndIf
+	    \ElsIf{transmit interrupt enabled}
+	      \If{*gp_buffer != null character}
+	        \State send *gp_buffer
+	        \State gp_buffer = next location in circular buffer
+	      \Else
+	        \State disable transmit interrupt
+	        \State send null character
+	        \State reset gp_buffer and g_buffer_end
+	      \EndIf
+	    \EndIf
+	  \EndFunction
+	\end{algorithmic}
+\end{algorithm}
 
 If there is an incoming character, immediately forward it to the KCD (assuming there is free memory) to echo back to the user. Also, add that character to a buffer. Once a newline is encountered, send the entire buffer to the KCD to decode
 
@@ -335,77 +346,97 @@ sdfasfdafd
 
 \subsection{Null Process}
 
-sdfdasfafadsf
+The null process simply releases the processor in an infinite loop.
+
+\begin{algorithm}[H]
+	\caption{Null Process}
+	\begin{algorithmic}
+		\Function{nullProc}{}
+			\While{true}
+				\State k_release_processor()
+			\EndWhile
+		\EndFunction		
+	\end{algorithmic}
+\end{algorithm}
 
 \subsection{CRT Process}
 
 The CRT's sole responsibility is to output the contents of the messages they receive to the UART.
 
-\begin{algorithmic}[1]
-  \Function{crtProc}{}
-    \While{true}
-      \State msg = receive\_message()
-      \State copy msg-$>$mtext to output buffer
-      \State enable\_UART\_transmit()
-      \State release\_memory\_block(msg)
-    \EndWhile
-  \EndFunction
-\end{algorithmic}
+\begin{algorithm}[H]
+	\caption{CRT Process}
+	\begin{algorithmic}[1]
+	  \Function{crtProc}{}
+	    \While{true}
+	      \State msg = receive\_message()
+	      \State copy msg-$>$mtext to output buffer
+	      \State enable\_UART\_transmit()
+	      \State release\_memory\_block(msg)
+	    \EndWhile
+	  \EndFunction
+	\end{algorithmic}
+\end{algorithm}
 
-\begin{algorithmic}[1]
-  \Function{copyToBuffer}{str}
-    \For{each char in str}
-      \State g_buffer[g_buffer_end] = char
-      \State g_buffer_end = (g_buffer_end + 1) mod BUFFER_SIZE
-    \EndFor
-  \EndFunction
-\end{algorithmic}
+\begin{algorithm}[H]
+	\caption{Copy string to circular buffer helper function}
+	\begin{algorithmic}[1]
+	  \Function{copyToBuffer}{str}
+	    \For{each char in str}
+	      \State g_buffer[g_buffer_end] = char
+	      \State g_buffer_end = (g_buffer_end + 1) mod BUFFER_SIZE
+	    \EndFor
+	  \EndFunction
+	\end{algorithmic}
+\end{algorithm}
 
 \subsection{KCD Process}
 
 The KCD's (Keyboard Command Decoder) responsibility is to decode messages that it receives, and forward them to the appropriate process that has registered itself to handle these types of messages.
 
-\begin{algorithmic}[1]
-  \Function{kcdProc}{}
-    \State identifiers = empty array
-    \State processes = empty array
-    \State numIdentifiers = 0
-    \While{true}
-      \State msg = receive\_message()
-      \If{msg-$>$mtype == KCD\_REG}
-        \State add msg's identifier to identifiers
-        \State add msg's sender to processes
-        \State numIdentifiers++
-        \State release\_message\_block(msg)
-      \ElsIf{msg-$>$mtype == ECHO}
-        \State send\_message(PID\_CRT, msg)
-      \Else
-        \If{msg-$>$mtext starts with '\%'}
-          \State handler = search for handler in identifiers
-        \EndIf
-        \If{no handler for this type of message}
-          \State release\_memory\_block(msg)
-        \Else
-          \State send\_message(handler, msg)
-        \EndIf
+\begin{algorithm}[H]
+	\caption{KCD Process}
+	\begin{algorithmic}[1]
+	  \Function{kcdProc}{}
+	    \State identifiers = empty array
+	    \State processes = empty array
+	    \State numIdentifiers = 0
+	    \While{true}
+	      \State msg = receive\_message()
+	      \If{msg-$>$mtype == KCD\_REG}
+	        \State add msg's identifier to identifiers
+	        \State add msg's sender to processes
+	        \State numIdentifiers++
+	        \State release\_message\_block(msg)
+	      \ElsIf{msg-$>$mtype == ECHO}
+	        \State send\_message(PID\_CRT, msg)
+	      \Else
+	        \If{msg-$>$mtext starts with '\%'}
+	          \State handler = search for handler in identifiers
+	        \EndIf
+	        \If{no handler for this type of message}
+	          \State release\_memory\_block(msg)
+	        \Else
+	          \State send\_message(handler, msg)
+	        \EndIf
 
-        \If{msg-$>$mtext begins with '!'}
-          \State search through PCBs for processes in ready state
-          \State debugMsg = create message with those processes
-          \State send\_message(PID\_CRT, debugMsg)
-        \ElsIf{msg-$>$mtext begins with '@'}
-          \State search through PCBs for processes in blocked state
-          \State debugMsg = create message with those processes
-          \State send\_message(PID\_CRT, debugMsg)
-        \ElsIf{msg-$>$mtext begins with '\#'}
-          \State search through PCBs for processes in blocked on message state
-          \State debugMsg = create message with those processes
-          \State send\_message(PID\_CRT, debugMsg)
-        \EndIf
-      \EndIf
-    \EndWhile
-  \EndFunction
-\end{algorithmic}
+	        \If{msg-$>$mtext begins with '!'}
+	          \State search through PCBs for processes in ready state
+	          \State debugMsg = create message with those processes
+	          \State send\_message(PID\_CRT, debugMsg)
+	        \ElsIf{msg-$>$mtext begins with '@'}
+	          \State search through PCBs for processes in blocked state
+	          \State debugMsg = create message with those processes
+	          \State send\_message(PID\_CRT, debugMsg)
+	        \ElsIf{msg-$>$mtext begins with '\#'}
+	          \State search through PCBs for processes in blocked on message state
+	          \State debugMsg = create message with those processes
+	          \State send\_message(PID\_CRT, debugMsg)
+	        \EndIf
+	      \EndIf
+	    \EndWhile
+	  \EndFunction
+	\end{algorithmic}
+\end{algorithm}
 
 This processes repeatedly receives messages. If it is a keyboard command registration, the process saves the identifier along with the process that is registered to handle those commands. If it is an echo command, the message is merely forwarded to the CRT. Otherwise, if the message is an actual command (i.e. it starts with a '\%'), the message is forwarded to the process that is registered to handle it, if it exists. Finally, if the message begins with any debug hotkey, the corresponding debug output is sent to the CRT.
 
@@ -417,39 +448,42 @@ This processes repeatedly receives messages. If it is a keyboard command registr
 
 This process receives messages to reset, start at a specified time, and stop the wall clock. Once started, the clock will print the elapsed time every second.
 
-\begin{algorithmic}[1]
-  \Function{wallClockProc}{}
-    \State register itself with KCD to handle '\%W' commands
-    \State id = 0
-    \While{true}
-      \State msg = receive\_message()
-      \If{msg contains reset command}
-        \State id++
-        \State time = 0
-        \State send increment time command to itself, delayed 1 second
-        \State construct time string, send to CRT to print
-      \ElsIf{msg contains increment command}
-        \If{msg's id == id}
-          \State time++
-          \State send increment time command to itself, delayed 1 second
-          \State construct time string, send to CRT to print
-        \Else
-          \State release\_memory\_block(msg)
-        \EndIf
-      \ElsIf{msg contains a start at specified time command}
-        \State id++
-        \State time = parseTime(msg)
-        \State send increment time command to itself, delayed 1 second
-        \State construct time string, send to CRT to print
-      \ElsIf{msg contains stop command}
-        \State id++
-        \State release\_memory\_block(msg)
-      \Else
-        \State release\_memory\_block(msg)
-      \EndIf
-    \EndWhile
-  \EndFunction
-\end{algorithmic}
+\begin{algorithm}[H]
+	\caption{Wall Clock Process}
+	\begin{algorithmic}[1]
+	  \Function{wallClockProc}{}
+	    \State register itself with KCD to handle '\%W' commands
+	    \State id = 0
+	    \While{true}\texttt{}
+	      \State msg = receive\_message()
+	      \If{msg contains reset command}
+	        \State id++
+	        \State time = 0
+	        \State send increment time command to itself, delayed 1 second
+	        \State construct time string, send to CRT to print
+	      \ElsIf{msg contains increment command}
+	        \If{msg's id == id}
+	          \State time++
+	          \State send increment time command to itself, delayed 1 second
+	          \State construct time string, send to CRT to print
+	        \Else
+	          \State release\_memory\_block(msg)
+	        \EndIf
+	      \ElsIf{msg contains a start at specified time command}
+	        \State id++
+	        \State time = parseTime(msg)
+	        \State send increment time command to itself, delayed 1 second
+	        \State construct time string, send to CRT to print
+	      \ElsIf{msg contains stop command}
+	        \State id++
+	        \State release\_memory\_block(msg)
+	      \Else
+	        \State release\_memory\_block(msg)
+	      \EndIf
+	    \EndWhile
+	  \EndFunction
+	\end{algorithmic}
+\end{algorithm}
 
 \subsection{Set Priority Process}
 
