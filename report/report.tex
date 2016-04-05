@@ -228,20 +228,123 @@ dsfasdfasfsfdf
 
 \subsection{Message Structure}
 
-dsfadsfadsfdasfdafs
+Every message uses a memory block as its underlying storage component, and has 2 parts: the part visible to the user (the struct \texttt{MSG_BUF}), and the part exclusive to the kernel (the struct \texttt{envelope}). 
+
+Every memory block created in the operating system has the first \texttt{sizeof(envelope)} bytes reserved, in case that memory block is used as a message. The envelope stores metadata about the message, such as the sender, receiver, the send time, etc. 
+
+Every process' PCB has a ``mailbox'', with a linked list of messages sent to that process that have not yet been read. Thus, the envelope also has a pointer pointing to the next envelope in that linked list.
+
+Then, there is the \texttt{MSG_BUF} struct, which is directly accessible by the user processes. The \texttt{MSG_BUF} contains 2 pieces of data: the type of the message (often \texttt{\#defined} as a constant), and the actual body of the message. The body of the message can take up the rest of the memory block (i.e. BLOCK_SIZE - sizeof(envelope) - sizeof(MSG_BUF.mtype)). 
+
 
 \subsection{Sending Messages}
 
-adsfdsafasdfasf
+The send message primitive receives as parameters the intended recipient of the message, and a pointer to the memory block with the actual message. First, a few pieces of metadata is set on the envelope. Then, it merely places that message in the mailbox, located in the PCB of the recipient. Finally, if that message is blocked waiting for a message, it puts that message on the ready queue. Additionally, if that message has higher priority than the current running process, it releases the processor.
+
+\begin{algorithm}[H]
+	\caption{Send Message}
+	\begin{algorithmic}[1]
+		\Function{send_message}{receiver_id, message}
+			\State message.sender = current process
+			\State message.receiver = receiver_id
+			\State enqueue message in the the receiver's mailbox
+			\If{receiver was blocked waiting for a message}
+				\State put receiver on the ready queue
+				\State set receiver's state to Ready
+				\If{receiver has higher priority than the current process}
+					\State release the processor
+				\EndIf
+			\EndIf
+		\EndFunction
+	\end{algorithmic}
+\end{algorithm}
+
+In addition to the \texttt{send_message()} function specified above, we needed another version of the function that would not preempt under any circumstances. This was necessary for the case when the UART i-process needed to send a message. I-processes must not preempt under any circumstances.
+
+\begin{algorithm}[H]
+	\caption{Send Message (Non-preemptive)}
+	\begin{algorithmic}[1]
+		\Function{send_message_non_preempt}{receiver_id, message}
+			\State message.sender = current process
+			\State message.receiver = receiver_id
+			\State enqueue message in the the receiver's mailbox
+			\If{receiver was blocked waiting for a message}
+				\State put receiver on the ready queue
+				\State set receiver's state to Ready
+			\EndIf
+		\EndFunction
+	\end{algorithmic}
+\end{algorithm}
+
+
+Finally, we created another version of \texttt{send_message()} specific to the timer i-process. The timer i-process must send messages to other processes once the timeout expires. However, the sender of that message is not the timer i-process, but rather the original sender. Thus, this necessitated the creation of a new function. Again, this version is non-preemptive for the same reasons as \texttt{send_message_non_preempt()}.
+
+\begin{algorithm}[H]
+	\caption{Send Message (Timer version)}
+	\begin{algorithmic}[1]
+		\Function{timer_send_message}{message}
+			\State receiver = message.receiver
+			\State enqueue message in the the receiver's mailbox
+			\If{receiver was blocked waiting for a message}
+				\State put receiver on the ready queue
+				\State set receiver's state to Ready
+			\EndIf
+		\EndFunction
+	\end{algorithmic}
+\end{algorithm}
 
 \subsection{Receiving Messages}
 
-dsfafasfdasf
+Receive message merely involves checking the current running process' mailbox, and seeing if there is any messages there. If there is, deque that message, and return it immediately. Otherwise, set the current process' state to blocked on receive, and release the processor.
+
+\begin{algorithm}[H]
+	\caption{Receive Message}
+	\begin{algorithmic}[1]
+		\Function{receive_message}{}
+			\While{there are no messages in the current process' mailbox}
+				\State current_process.state = BLOCKED_ON_RECEIVE
+				\State release the processor
+			\EndWhile
+
+			\State dequeue the first message in the mailbox
+			\State\Return message, sender_id
+		\EndFunction
+	\end{algorithmic}
+\end{algorithm}
+
+Similar to sending messages, receiving messages also needs a non_blocking version, to be used by the i-processes. If there are no messages in an i-process' mailbox, it should never block. Instead, it should return immediately, and indicate that there are no messages. This function is mainly used by the timer i-process.
+
+\begin{algorithm}[H]
+	\caption{Receive Message (non-blocking)}
+	\begin{algorithmic}[1]
+		\Function{receive_message_non_blocking}{process}
+			\If{there are no messages in the process' mailbox}
+				\State\Return NULL
+			\EndIf
+
+			\State dequeue the first message in the mailbox
+			\State\Return message, sender_id
+		\EndFunction
+	\end{algorithmic}
+\end{algorithm}
+
 
 \subsection{Delayed Send}
 
+Delayed send is implemented by sending a message to the timer i-process specifying the time when the message should actually be sent to the intended recipient.
 
-sdfasfasfd
+\begin{algorithm}[H]
+	\caption{Delayed Send}
+	\begin{algorithmic}[1]
+		\Function{delayed_send}{receiver, message, delay}
+			\State message.sender = current process
+			\State message.receiver = receiver
+			\State message.send_time = current_time + delay
+
+			\State enqueue the message in the timer i-process's mailbox 
+		\EndFunction
+	\end{algorithmic}
+\end{algorithm}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -350,7 +453,7 @@ The null process simply releases the processor in an infinite loop.
 
 \begin{algorithm}[H]
 	\caption{Null Process}
-	\begin{algorithmic}
+	\begin{algorithmic}[1]
 		\Function{nullProc}{}
 			\While{true}
 				\State k_release_processor()
