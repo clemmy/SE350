@@ -128,7 +128,7 @@ The report aims to provide documentation for the operating system, in order to f
 
 By keeping track of the \texttt{gp_stack} and \texttt{gp_pcbs} pointers and keeping track of how much memory the \texttt{PCB}s use, then it is possible to do some pointer arithmetic to determine the starting and ending addresses of the heap (the physical memory available to allocate in the RTX).
 
-The implementation of memory management in this RTX involves maintaing a linked list that keeps track of all the available \texttt{MemBlock}s on the heap. Upon process consumption of memory, \texttt{MemBlock}s allocated are removed from the linked list and a reference to the block is kept in the process. Upon release, the \texttt{MemBlock} is appended to the linked list again. This means that the runtime is $O(1)$ for deletion and insertion of blocks.
+The implementation of memory management in this RTX involves maintaining a linked list that keeps track of all the available \texttt{MemBlock}s on the heap. Upon process consumption of memory, \texttt{MemBlock}s allocated are removed from the linked list and a reference to the block is kept in the process. Upon release, the \texttt{MemBlock} is appended to the linked list again. This means that the runtime is $O(1)$ for deletion and insertion of blocks.
 
  The \texttt{MemBlock}s have a user-defined size called \texttt{BLOCK_SIZE}. The system also reserves some space in the beginning of \texttt{MemBlock}s for \texttt{envelope}s. By default, the \texttt{BLOCK_SIZE} is set to 128 bytes.
 
@@ -209,7 +209,7 @@ After the next process is chosen, a context switch must be performed to safely s
   \caption{Releasing processor function}
   \begin{algorithmic}[1]
     \Procedure{release\_processor}{}
-	  \State {new\_process = scheduler()}
+	  \State {call the scheduler to determine the new process}
       \State {context switch from the old process to the new process}
     \EndProcedure
   \end{algorithmic}
@@ -277,20 +277,18 @@ The context switch procedure has three main purposes.  It must set the states of
 
 \subsection{Get Process Priority}
 
-The get process priority function takes in the process id as a parameter and returns its priority. We denote the priority of -1 if the process is not found. To find the process by its id, we loop through all the pcbs which are stored in gp_pcbs and compare the process_id. If a matching pcb is found, then we retrieve its priority and return. Otherwise, the loop will end without ever finding a process and will return -1.
+The get process priority function takes in a process id as a parameter and returns its priority. The function returns -1 if the process is not found. To find the process by its id, we loop through all the \texttt{PCB}s which are stored in \texttt{gp_pcbs}, and compare the process_id. If a matching \texttt{PCB} is found, then we retrieve its priority and return. Otherwise, the loop will end without ever finding a process and will return -1.
 
 \begin{algorithm}[H]
   \caption{Get Process Priority}
   \begin{algorithmic}[1]
   \Function {k_get_process_priority}{process_id}
-  \State int priority = -1;
-  \For {every process in pcb array}
-    \If {process found}
-      \State priority = process.priority;
-      \State return priority;
+  \For {every process in PCB array}
+    \If {id of this process matches the process\_id parameter}
+      \State return priority of process
      \EndIf
   \EndFor
-  \State return priority;
+  \State return priority, or -1 if process is not found
   \EndFunction
   \end{algorithmic}
 \end{algorithm}
@@ -305,14 +303,12 @@ The set process priority function takes in the process id and a priority as the 
   \Function {k_set_process_priority}{int process_id, int priority}
     \If {priority is within valid range}
       \For {every user process}
-        \If {process found}
-          \If {process.priority is different}
-            \State old_priority = process.priority;
-            \State process.priority = priority;
-            \If {process is not currently executing}
-              \State attempt move the process priority, else undo priority
+        \If {id of this process matches the process\_id parameter}
+          \If {new priority is different}
+            \If {process is in wrong priority of ReadyPQ}
+              \State move process to correct priority
             \EndIf     
-            \State release the processor
+            \State release the processor (for pre-emption)
           \EndIf
         \EndIf
       \EndFor
@@ -333,12 +329,12 @@ Every memory block created in the operating system has the first \texttt{sizeof(
 
 Every process' \texttt{PCB} has a ``mailbox'', with a linked list of messages sent to that process that have not yet been read. Thus, the envelope also has a pointer pointing to the next envelope in that linked list.
 
-Then, there is the \texttt{MSG_BUF} struct, which is directly accessible by the user processes. The \texttt{MSG_BUF} contains 2 pieces of data: the type of the message (often \texttt{\#defined} as a constant), and the actual body of the message. The body of the message can take up the rest of the memory block (i.e. BLOCK_SIZE - sizeof(envelope) - sizeof(MSG_BUF.mtype)). 
+Then, there is the \texttt{MSG_BUF} struct, which is directly accessible by the user processes. The \texttt{MSG_BUF} contains 2 pieces of data: the type of the message (often \texttt{\#defined} as a constant), and the actual body of the message. The body of the message can take up the rest of the memory block (i.e. \texttt{BLOCK_SIZE} - \texttt{sizeof(envelope)} - \texttt{sizeof(MSG_BUF.mtype)}). 
 
 
 \subsection{Sending Messages}
 
-The send message primitive receives as parameters the intended recipient of the message, and a pointer to the memory block with the actual message. First, a few pieces of metadata is set on the envelope. Then, it merely places that message in the mailbox, located in the \texttt{PCB} of the recipient. Finally, if that message is blocked waiting for a message, it puts that message on the ready queue. Additionally, if that message has higher priority than the current running process, it releases the processor.
+The send message primitive receives as parameters the intended recipient of the message, and a pointer to the memory block containing the message. First, a few pieces of metadata is set on the envelope. Then, it merely places that message in the mailbox, located in the \texttt{PCB} of the recipient. Finally, if that message is blocked waiting for a message, it puts that message on the ready queue. Additionally, if that message has higher priority than the current running process, it releases the processor.
 
 \begin{algorithm}[H]
 	\caption{Send Message}
@@ -348,8 +344,7 @@ The send message primitive receives as parameters the intended recipient of the 
 			\State message.receiver = receiver_id
 			\State enqueue message in the the receiver's mailbox
 			\If{receiver was blocked waiting for a message}
-				\State put receiver on the ready queue
-				\State set receiver's state to Ready
+				\State put receiver on the ready queue, setting its state to Ready
 				\If{receiver has higher priority than the current process}
 					\State release the processor
 				\EndIf
@@ -358,7 +353,7 @@ The send message primitive receives as parameters the intended recipient of the 
 	\end{algorithmic}
 \end{algorithm}
 
-In addition to the \texttt{send_message} function specified above, we needed another version of the function that would not preempt under any circumstances. This was necessary for the case when the UART i-process needed to send a message. I-processes must not preempt under any circumstances.
+In addition to the \texttt{send_message} function specified above, we needed another version of the function that would not preempt under any circumstances. This was necessary for the case when the UART i-process needed to send a message. I-processes must not be preempted under any circumstances.
 
 \begin{algorithm}[H]
 	\caption{Send Message (Non-preemptive)}
@@ -376,7 +371,7 @@ In addition to the \texttt{send_message} function specified above, we needed ano
 \end{algorithm}
 
 
-Finally, we created another version of \texttt{send_message} specific to the timer i-process. The timer i-process must send messages to other processes once the timeout expires. However, the sender of that message is not the timer i-process, but rather the original sender. Thus, this necessitated the creation of a new function. Again, this version is non-preemptive for the same reasons as \texttt{send_message_non_preempt}.
+Finally, we created another version of \texttt{send_message} specific to the timer i-process. The timer i-process must send messages to other processes once the timeout expires, if the message was initially sent with \texttt{delayed_send}. However, the sender of that message is not the timer i-process, but rather the original sender. This necessitated the creation of a new function. Again, this version is non-preemptive, since it is also called exclusively during an interruption.
 
 \begin{algorithm}[H]
 	\caption{Send Message (Timer version)}
@@ -385,8 +380,7 @@ Finally, we created another version of \texttt{send_message} specific to the tim
 			\State receiver = message.receiver
 			\State enqueue message in the the receiver's mailbox
 			\If{receiver was blocked waiting for a message}
-				\State put receiver on the ready queue
-				\State set receiver's state to Ready
+				\State put receiver on the ready queue, setting its state to Ready
 			\EndIf
 		\EndFunction
 	\end{algorithmic}
@@ -394,14 +388,14 @@ Finally, we created another version of \texttt{send_message} specific to the tim
 
 \subsection{Receiving Messages}
 
-Receive message merely involves checking the current running process' mailbox, and seeing if there is any messages there. If there is, deque that message, and return it immediately. Otherwise, set the current process' state to blocked on receive, and release the processor.
+Receive message merely involves checking the current running process' mailbox, and checking if there are any messages there. If there is a message, dequeue it and return it immediately. Otherwise, set the current process' state to blocked on receive (\texttt{WAIT}), and release the processor.  Note that processes that are blocked on receive are not in any queue; they are simply floating.  When the message is sent to them they are accessed by their process ID and enqueued back into \texttt{ReadyPQ}.
 
 \begin{algorithm}[H]
 	\caption{Receive Message}
 	\begin{algorithmic}[1]
 		\Function{receive_message}{}
 			\While{there are no messages in the current process' mailbox}
-				\State current_process.state = BLOCKED_ON_RECEIVE
+				\State set current process' state to WAIT
 				\State release the processor
 			\EndWhile
 
@@ -411,7 +405,7 @@ Receive message merely involves checking the current running process' mailbox, a
 	\end{algorithmic}
 \end{algorithm}
 
-Similar to sending messages, receiving messages also needs a non_blocking version, to be used by the i-processes. If there are no messages in an i-process' mailbox, it should never block. Instead, it should return immediately, and indicate that there are no messages. This function is mainly used by the timer i-process.
+Similar to sending messages, receiving messages also needs a non_blocking version, to be used by the i-processes. If there are no messages in an i-process' mailbox, it should never block. Instead, it should return \texttt{NULL} to indicate that there are no messages. This function is mainly used by the timer i-process.
 
 \begin{algorithm}[H]
 	\caption{Receive Message (non-blocking)}
@@ -473,7 +467,7 @@ Below is the interrupt handling pseudocode, starting with UART0_IRQHandler:
 	  \Function{c_UART0_IRQHandler_wrapper}{}
 	    \State call c_UART0_IRQHandler()
 	    \If{there is another ready process with higher priority than the current process}
-	      \State call k_release_processor()
+	      \State release the processor
 	    \EndIf
 	  \EndFunction
 	\end{algorithmic}
@@ -484,37 +478,29 @@ Below is the interrupt handling pseudocode, starting with UART0_IRQHandler:
 	\begin{algorithmic}[1]
 	  \Function{c_UART0_IRQHandler}{}
 	    \If{receive data available}
-	      \State g_char_in = newly received char
-	      \If{g_char_in == null character}
+	      \State read a character of user input to g_char_in
+	      \If{g_char_in is the null character}
 	        \State\Return
 	      \EndIf
-
-	      \State echoMsg = get memory block (non blocking)
-	      \If{echoMsg is not null}
-	        \State echoMsg-$>$mtype = ECHO
-	        \If{g_char_in == '\textbackslash r'}
-	          \State echoMsg-$>$mtext = \verb|"\n\r\0"|
-	        \Else
-	          \State echoMsg-$>$mtext = g_char_in + \verb|'\0'|
-	        \EndIf
-	        \State send echoMsg (no preemption) to KCD
+	      \State echo_msg = get memory block (non blocking)
+	      \If{memory was received for echo_msg}
+	        \State set type of echo_msg to ECHO
+	        \State set text of echo_msg to a copy of the user input
+	        \State send echo_msg (no preemption) to KCD \Comment Echo input back to UART
 	      \EndIf
-	      \If{cur_msg is null}
-	        \State cur_msg = get memory block (non blocking)
-	        \If{cur_msg is null (no more memory)}
+	      \If{cur_msg is NULL (has not been created)}
+	        \State request a memory block for cur_msg
+	        \If{there is no more memory to create cur_msg}
 	          \State\Return
 	        \EndIf
-
-	        \State msg_str_index = 0
 	      \EndIf
 
-	      \If{g_char_in == '\textbackslash r' or message about to overflow memory block}
-	        \State cur_msg-$>$mtext += '\textbackslash 0'
-	        \State cur_msg-$>$mtype = DEFAULT
+	      \If{user input was a newline or message about to overflow memory block}
+	        \State set message type to DEFAULT
 	        \State send cur_msg (no preemption) to KCD
-	        \State reset cur_msg, msg_str_index
+	        \State reset cur_msg to NULL
 	      \Else
-	        \State cur_msg-$>$mtext += g_char_in
+	        \State append user input character to the end of cur_msg
 	      \EndIf
 	    \ElsIf{transmit interrupt enabled}
 	      \If{*gp_buffer != null character}
@@ -579,7 +565,7 @@ The main function of \texttt{TIMER0_IRQHANDLER} is to save the registers of the 
 	\end{algorithmic}
 \end{algorithm}
 
-This C code increments the timer count and processes the messages the timer recevies via \texttt{delayed\_send}.  The messages that need to be sent after a certain time period are stored in the local queue Q, which is sorted by the time that the messages should be sent to their recipients.  This means that the message at the front of the queue is always the message that needs to be sent sooner than the rest.  This algorithm first receives all the messages stored in the timer interrupt's \texttt{PCB} and inserts them into Q.  Then it checks to see which messages need to be sent at the current \texttt{g_timer_count} and sends each of these messages.  This interrupt will only release the processor if there is currently a process in the \texttt{ReadyPQ} with a higher priority than the current running process, allowing the higher priority process to pre-empt the currently running process.
+This C code increments the timer count and processes the messages the timer receives via \texttt{delayed\_send}.  The messages that need to be sent after a certain time period are stored in the local queue Q, which is sorted by the time that the messages should be sent to their recipients.  This means that the message at the front of the queue is always the message that needs to be sent sooner than the rest.  This algorithm first receives all the messages stored in the timer interrupt's \texttt{PCB} and inserts them into Q.  Then it checks to see which messages need to be sent at the current \texttt{g_timer_count} and sends each of these messages.  This interrupt will only release the processor if there is currently a process in the \texttt{ReadyPQ} with a higher priority than the current running process, allowing the higher priority process to preempt the currently running process.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -587,7 +573,7 @@ This C code increments the timer count and processes the messages the timer rece
 
 \subsection{Null Process}
 
-The null process simply releases the processor in an infinite loop.
+The null process simply releases the processor in an infinite loop.  It should only be run if there are no other processes in the Ready state.  It is necessary only because the processor should be running at all times.
 
 \begin{algorithm}[H]
 	\caption{Null Process}
@@ -610,7 +596,7 @@ The CRT's sole responsibility is to output the contents of the messages they rec
 	  \Function{crtProc}{}
 	    \While{true}
 	      \State msg = receive\_message()
-	      \State copy msg-$>$mtext to output buffer
+	      \State copy text of msg to output buffer
 	      \State enable\_UART\_transmit()
 	      \State release\_memory\_block(msg)
 	    \EndWhile
@@ -632,46 +618,51 @@ The CRT's sole responsibility is to output the contents of the messages they rec
 
 \subsection{KCD Process}
 
-The KCD's (Keyboard Command Decoder) responsibility is to decode messages that it receives, and forward them to the appropriate process that has registered itself to handle these types of messages.
+The KCD's (Keyboard Command Decoder) responsibility is to decode messages that it receives, and forward them to the appropriate process that has registered itself to handle these types of messages.  It must handle a variety of message types:
+
+\begin{itemize}
+	\item Messages to register a process with a unique identifier
+    \item Messages that should be echoed back to the UART
+    \item Messages that begin with an identifier
+    \item Messages that begin with a debug hotkey.  There are three debug hotkeys:
+    \begin{itemize}
+		\item ! will display all processes in the \texttt{RDY} state.
+        \item @ will display all processes in the \texttt{BLK} state 
+        \item \# will display all processes in the \texttt{WAIT} state 
+	\end{itemize}
+    
+\end{itemize}
 
 \begin{algorithm}[H]
 	\caption{KCD Process}
 	\begin{algorithmic}[1]
 	  \Function{kcdProc}{}
-	    \State identifiers = empty array
-	    \State processes = empty array
-	    \State numIdentifiers = 0
-	    \While{true}
+	    \While{loop forever}
 	      \State msg = receive\_message()
-	      \If{msg-$>$mtype == KCD\_REG}
-	        \State add msg's identifier to identifiers
-	        \State add msg's sender to processes
-	        \State numIdentifiers++
+	      \If{type of msg is KCD\_REG (a regstration message)}
+	        \State assign the identifier to the process that sent the message
 	        \State release\_message\_block(msg)
-	      \ElsIf{msg-$>$mtype == ECHO}
-	        \State send\_message(PID\_CRT, msg)
+	      \ElsIf{type of message is ECHO (echoes user input)}
+	        \State send msg to the CRT (echo it to the UART)
 	      \Else
-	        \If{msg-$>$mtext starts with '\%'}
-	          \State handler = search for handler in identifiers
+	        \If{text of msg starts with '\%'}
+	          \State search for a process with the identifier in the text of msg
 	        \EndIf
-	        \If{no handler for this type of message}
+	        \If{no process has this identifier}
 	          \State release\_memory\_block(msg)
 	        \Else
-	          \State send\_message(handler, msg)
+	          \State send the message to this process
 	        \EndIf
 
-	        \If{msg-$>$mtext begins with '!'}
+	        \If{text of message begins with '!'}
 	          \State search through PCBs for processes in ready state
-	          \State debugMsg = create message with those processes
-	          \State send\_message(PID\_CRT, debugMsg)
-	        \ElsIf{msg-$>$mtext begins with '@'}
+	          \State send a message to the CRT to display these processes
+	        \ElsIf{text of message begins with '@'}
 	          \State search through PCBs for processes in blocked state
-	          \State debugMsg = create message with those processes
-	          \State send\_message(PID\_CRT, debugMsg)
-	        \ElsIf{msg-$>$mtext begins with '\#'}
+	          \State send a message to the CRT to display these processes
+	        \ElsIf{text of message begins with '\#'}
 	          \State search through PCBs for processes in blocked on message state
-	          \State debugMsg = create message with those processes
-	          \State send\_message(PID\_CRT, debugMsg)
+	          \State send a message to the CRT to display these processes
 	        \EndIf
 	      \EndIf
 	    \EndWhile
@@ -695,11 +686,11 @@ This process receives messages to reset, start at a specified time, and stop the
 	  \Function{wallClockProc}{}
 	    \State register itself with KCD to handle '\%W' commands
 	    \State id = 0
-	    \While{true}\texttt{}
+	    \While{loop forever}\texttt{}
 	      \State msg = receive\_message()
 	      \If{msg contains reset command}
 	        \State id++
-	        \State time = 0
+	        \State time = 00:00:00
 	        \State send increment time command to itself, delayed 1 second
 	        \State construct time string, send to CRT to print
 	      \ElsIf{msg contains increment command}
@@ -726,6 +717,8 @@ This process receives messages to reset, start at a specified time, and stop the
 	\end{algorithmic}
 \end{algorithm}
 
+The local parameter "id" is used to ensure that messages containing the increment command are released when the clock is reset or terminated.  When the clock is reset or terminated, its ID is updated to ensure that increment messages sent previously (containing a different ID) are recognized as being deprecated.
+
 \subsection{Set Priority Process}
 
 This process registers itself with the KCD to handle ``\%C'' commands. It accepts as parameters a process id, and the new priority for that process.
@@ -737,7 +730,7 @@ This process registers itself with the KCD to handle ``\%C'' commands. It accept
 	  	\State send message to KCD to register itself to handle ``\%C'' commands
 
 	  	\While{true}
-	  		\State msg = receive new message
+	  		\State msg = receive_message()
 	  		\State parse msg's string to get the process_id and new priority to change to
 	  		\If{error parsing string}
 	  			\State print error message
@@ -771,7 +764,8 @@ We initialize the kernel in \texttt{k\_rtx\_init.c}. In the initialization funct
 	\item heap 
 \end{enumerate}
 
-The timers are initialized by setting appropriate configuration parameters such as the freqency. The UART is initialized by enabling UART interrupts and setting configuration parameters. The memory is initialized by allocating space for the each of the \texttt{PCB}s. Then, the fields in \texttt{PCB}s are populated from data in the process table, such as each process's priority, stack size, etc. Then, stack space is allocated in memory based on how much each process requested. Then, all \texttt{PCB}s that require scheduling are placed on the ready queue. Finally, after the \texttt{PCB}s are allocated in the lower memory addresses, and the stacks are allocated in the higher memory addresses, all remaining memory in between is split up into equally sized blocks, to be used as the heap. 
+The timers are initialized by setting appropriate configuration parameters such as the frequency. The UART is initialized by enabling UART interrupts and setting configuration parameters.
+The memory is initialized by allocating space for the each of the \texttt{PCB}s. Then, the fields in \texttt{PCB}s are populated from data in the process table, such as each process's priority, stack size, etc. Afterwards, stack space is allocated in memory based on how much each process requested. Then, all \texttt{PCB}s that require scheduling are placed on the ready queue. Finally, after the \texttt{PCB}s are allocated in the lower memory addresses, and the stacks are allocated in the higher memory addresses, all remaining memory in between is split up into equally sized blocks, to be used as the heap. 
 
 One possible configuration parameter is the \texttt{BLOCK_SIZE} of the heap memory blocks. By default, it is 128 bytes. However, it can be tuned to smaller and larger values to fit the specific use case of the operating system, in order to reduce internal fragmentation.
 
@@ -830,7 +824,7 @@ The formal test cases for P3 were processes A, B and C as outlined in the lab ma
 
 One major change that occurred between P1 and P2 was how the memory blocks were structured. In P1, we returned a pointer to the very first byte in the memory block whenever memory was requested, giving user processes complete access to every byte in the memory block. However, in P2, we discovered that this implementation was no longer feasible. When messages get sent using a memory block, there needs to be space in the block for the OS to store metadata about that message, such as the sender, receiver, etc. Therefore, the major design change was to always leave $x$ bytes at the beginning of each memory block for the kernel to store the metadata, and return a pointer to the beginning of the block + $x$ bytes. This required changing code that assumed it had the entire memory block available to use.
 
-A major stumbling block was a hardfault we were getting in P1. At that time, we did not understand the difference between the difference between \texttt{k_} prefixed functions and non-\texttt{k_} prefixed functions. It took many hours of debugging to realize that the non-\texttt{k_} prefixed functions invoke the SVC Handler, which changed the processor into kernel mode, allowing us to execute priviledged instructions. When calling the \texttt{k_} prefixed functions from a user process, it immediately hardfaulted since it was trying to execute priviledged instructions.
+A major stumbling block was a hardfault we were getting in P1. At that time, we did not understand the difference between the difference between \texttt{k_} prefixed functions and non-\texttt{k_} prefixed functions. It took many hours of debugging to realize that the non-\texttt{k_} prefixed functions invoke the SVC Handler, which changed the processor into kernel mode, allowing us to execute privileged instructions. When calling the \texttt{k_} prefixed functions from a user process, it immediately hardfaulted since it was trying to execute privileged instructions.
 
 Another issue we ran into in P2 was a interrupt issue where our kernel primitives were being interrupted by the timer and UART i-processes, causing undefined behaviour. This problem was fixed by calling \texttt{__disable_irq} and \texttt{__enable_irq} to disable and re-enable interrupts at the beginning and end of kernel primitives.
 
@@ -843,18 +837,18 @@ Upon the completion of this project, the group has gained many valuable insights
 
 \section{Version Control}
 For our codebase, we used Git as version control. At first, it was a bit painful because we were mostly committing to the master branch and we haven't found out which files to add to the .gitignore yet. This led to a lot of merge conflicts from differing binary files.
-However, when the project was in a more stable state, we later progressed to branching out for different tasks and modules. This proved to be quite helpful because it allowed us to separate concerns and work on tasks indepdently.
-One way we could have improved this is by having a systematic review process. Because of the team's lack of periodic code reviews and the fact that we divided the work up, the team did not have the opportunity to learn about work that other team members worked on, resulting in a team whose knowledge was extremely speciaized and exclusive for each individual member. This meant that bugs relating to a certain module can only be understood by some members of the team, which sometimes slowed progress down. To improve on this, the team could have periodic code reviews to keep everyone up to date and knowledgable in all parts of the codebase.
+However, when the project was in a more stable state, we later progressed to branching out for different tasks and modules. This proved to be quite helpful because it allowed us to separate concerns and work on tasks independently.
+One way we could have improved this is by having a systematic review process. Because of the team's lack of periodic code reviews and the fact that we divided the work up, the team did not have the opportunity to learn about work that other team members worked on, resulting in a team whose knowledge was extremely specialized and exclusive for each individual member. This meant that bugs relating to a certain module can only be understood by some members of the team, which sometimes slowed progress down. To improve on this, the team could have periodic code reviews to keep everyone up to date and knowledgeable in all parts of the codebase.
 
 \section{Code Management}
-When the group first started off coding, the code was extremely unmodular, files were monolithic, comments were lacking, and globals were overly used. This made the code quite messy to look at, and as we progressed through the different parts of the lab, we found it increasingly difficult to debug and navigate through our codebase. Somewhere between P2 and P3, we hit a wall where our RTX had some fundamental bugs with regard to scheduling. However, it was very hard to trace this bug down with our style of code. We dedicated a few days to refactoring the code base; we added comments on hard to understand expressions, we tried to reduce the use of global variables if they were not needed, and we separated long functions into smaller re-usable components. The end result was that unit testing was a lot easier.
+When the group first started off coding, the code was extremely unmodular, files were monolithic, comments were lacking, and global variables were overly used. This made the code quite messy to look at, and as we progressed through the different parts of the lab, we found it increasingly difficult to debug and navigate through our codebase. Somewhere between P2 and P3, we hit a wall where our RTX had some fundamental bugs with regard to scheduling. However, it was very hard to trace this bug down with our style of code. We dedicated a few days to refactoring the code base; we added comments on hard to understand expressions, we tried to reduce the use of global variables if they were not needed, and we separated long functions into smaller re-usable components. The end result was that unit testing was a lot easier.
 
 \section{Logging and Output}
-For some memory issues, it was extremely hard to debug. Even when tracing through the debugger, looking at pointer values is not always the most intuitive. In order to make development easier, we decided to add scoped debug flags in our RTX in order to trace bugs without convoluting the output. For example, we had a \texttt{MEM_DEBUG} flag which could be enabled to output the available amount of memory blocks after each transaction in order to debug a memory leak, and have the default \texttt{DEBUG} flag enabled for less specialized debugging. This allowed us to more intuitively track errors down.
+For some memory issues, it was extremely hard to debug. Even when tracing through the debugger, looking at pointer values is not always the most intuitive. In order to make development easier, we decided to add scoped debug flags in our RTX in order to trace bugs without making the output more convoluted. For example, we had a \texttt{MEM_DEBUG} flag which could be enabled to output the available amount of memory blocks after each transaction in order to debug a memory leak, and have the default \texttt{DEBUG} flag enabled for less specialized debugging. This allowed us to more intuitively track errors down.
 
 \chapter{Team Dynamics and Individual Responsibilities}
 The team members did not enforce a strict task allocation process for deciding each members' responsibilities. Generally however, the scheduling process is similar to the following scenario:
-Upon the initial lab introduction, all four of the members would be present, in order to discuss the material and areas of interest. Then, the members would split into two pairs to work on the parts they chose respectively, using pair programming concepts, and communication both online and offline. If one pair is finished earlier than the other, then they would usually group up with the remaining pair to work through the problem. Otherwise, they would colloratively merge the parts they've worked on into a final workiing product before the deadline.
+Upon the initial lab introduction, all four of the members would be present, in order to discuss the material and areas of interest. Then, the members would split into two pairs to work on the parts they chose respectively, using pair programming concepts, and communication both online and offline. If one pair is finished earlier than the other, then they would usually group up with the remaining pair to work through the problem. Otherwise, they would collaboratively merge the parts they've worked on into a final working product before the deadline.
 
 \chapter{Timing Analysis}
 
