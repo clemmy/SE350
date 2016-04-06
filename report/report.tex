@@ -54,25 +54,25 @@
 
 \chapter{Introduction}
 
-The purpose of this report is to outline the design of the RTX written by the group members, Clement Hoang, David Su, Peter Li, and Cole Vander Veen, as part of the SE350 course at the University of Waterloo. The OS is designed for a Keil MCB1700 Cortex-M3 board, with a LPC1768 microcontroller.
+The purpose of this report is to outline the design and implementation of the RTX code written by the group members, Clement Hoang, David Su, Peter Li, and Cole Vander Veen, as part of the SE350 course at the University of Waterloo. The OS is designed for a Keil MCB1700 Cortex-M3 board, with a LPC1768 microcontroller.
 
-It is aimed to provide documentation for the operating system, in order to facilitate the use and understanding for anyone interested in programming for the OS. As such, this report outlines the global variables used in the OS, and then moves on to describing the kernel API in a modular and chronological way, from when we implemented it. Finally, the report closes with some analysis on the OS, and challenges that the group faced for the duration of the lab.
+The report aims to provide documentation for the operating system, in order to facilitate the use and understanding for anyone interested in programming for the OS. As such, this report outlines the global variables used in the OS, then moves on to describing the kernel API in a modular and chronological way. Finally, the report closes with some analysis on the OS, and challenges that the group faced for the duration of the lab.
 
 \chapter{Design Description}
 
 \section{Global Variables and Data Structures}
 \begin{itemize}
-  \item \texttt{memQueue}: A data structure that models the free physical memory in the OS, by splitting the heap into blocks of equal size. It is represented by a \texttt{MemQueue} data structure, which is a linked list of \texttt{MemBlock} nodes of size \texttt{BLOCK_SIZE}. It is used by the kernel API when releasing and requesting memory, by popping a block when it is used by a process, and pushing it back in when it is released.
+  \item \texttt{memQueue}: A data structure that models the free physical memory in the OS, by splitting the heap into blocks of equal size. It is represented by a \texttt{memQueue} data structure, which is a linked list of \texttt{MemBlock} nodes of size \texttt{BLOCK_SIZE} (\texttt{BLOCK_SIZE} is a constant defined in the OS). When a process requests memory using the kernel API call \texttt{request\_memory\_block}, a block of memory is dequeued from the \texttt{memQueue} and given to the process.  When a process releases memory, it is enqueued into \texttt{memQueue} again.
     \begin{itemize}
-      \item \texttt{MemBlock}: To expand, the \texttt{MemBlock} is a C-struct that holds a pointer to the next \texttt{MemBlock} in the queue. It also has reserved space in the front in case the block needs to hold an \texttt{envelope}. The \texttt{envelope} contains the following fields:
+      \item \texttt{MemBlock}: To expand, the \texttt{MemBlock} is a C-struct representing a single block of memory that holds a pointer to the next \texttt{MemBlock} in the queue. There is reserved space at the front of each memory block in case the block needs to hold an \texttt{envelope}. This space is only used if the memory block is being used to send messages.  The \texttt{envelope} contains the following fields:
         \begin{itemize}
-          \item \texttt{next}: a pointer to the next envelope in the queue
-          \item \texttt{sender_id}: the process ID of the sender
-          \item \texttt{recv_id}: the process ID of the receiver
-          \item \texttt{send_time}: the time it was originally sent at
+          \item \texttt{next}: a pointer to the next envelope in a message queue
+          \item \texttt{sender_id}: the process ID of the message sender
+          \item \texttt{recv_id}: the process ID of the message receiver
+          \item \texttt{send_time}: the time the message was originally sent at
         \end{itemize}
     \end{itemize}
-  \item \texttt{gp_pcbs}: A pointer to an array of \texttt{PCB} structs. It holds the state of all the process control blocks that are in the OS, and is interacted with by functions that change and read PCB states. For example, setting the process priority or getting the process priority uses \texttt{gp_pcbs} to access the priority of a specific PCB.
+  \item \texttt{gp_pcbs}: A pointer to an array of \texttt{PCB} (Process Control Block) structs. It holds the state of every process control block in the OS, and is interacted with by functions that need to access the \texttt{PCB}s. For example, setting the process priority or getting the process priority uses \texttt{gp_pcbs} to access the priority of a specific \texttt{PCB}.
     \begin{itemize}
       \item \texttt{PCB}: a model of a process and its state. The \texttt{PCB} contains the following fields:
         \begin{itemize}
@@ -85,24 +85,24 @@ It is aimed to provide documentation for the operating system, in order to facil
           \item \texttt{msgTail}: end of the message queue
         \end{itemize}
     \end{itemize}
-  \item \texttt{g_proc_table}: an array of \texttt{PROC_INIT} structs that contains process information for initialization. The \texttt{PROC_INIT} looks like the following:
+  \item \texttt{g_proc_table}: an array of \texttt{PROC_INIT} structs that contains process information for initialization. The \texttt{PROC_INIT} contains the following:
     \begin{itemize}
       \item \texttt{m_id}: ID of the process
       \item \texttt{m_priority}: initial priority of the process
       \item \texttt{m_stack_size}: size to allocate for the process in words
     \end{itemize}
-  The process table is used often during the \texttt{process_init()} function.
-    \item \texttt{gp_stack}: a pointer to the top of the memory heap, which is also the last conceptual memory block in \texttt{memQueue}. It is used during \texttt{heap_init()}.
-  \item \texttt{p_end}: a pointer to the beginning of the memory heap, which is also the first conceptual memory block in \texttt{memQueue}. It is calculated by starting at \texttt{\&Image\$\$RW_IRAM1\$\$ZI\$\$Limit}, then incrementing it upon PCB initialization in \texttt{memory_init()}.
-  \item \texttt{numOfBlocks}: the number of blocks of \texttt{MemBlock} allocated in the \texttt{heap_init()}
+  The process table is where the initial \texttt{PCB} data for each user process is defined.  This data is used by the \texttt{process_init} function to create the initialize the \texttt{PCB} for each process.
+    \item \texttt{gp_stack}: a pointer to the end of the stack space, which is also the top of the \texttt{memQueue}. When initializing the heap in the function \texttt{heap_init}, no memory past this address may be used as a free memory block.
+  \item \texttt{p_end}: a pointer to the beginning of the memory heap, which is also conceptually the first memory block in \texttt{memQueue}. It is calculated by starting at \texttt{\&Image\$\$RW_IRAM1\$\$ZI\$\$Limit}, then incrementing it upon \texttt{PCB} initialization in \texttt{memory_init} to account for the extra space for the \texttt{PCB}s.
+  \item \texttt{numOfBlocks}: the number of blocks of \texttt{MemBlock} allocated in the \texttt{heap_init} function call.
   \item \texttt{g_switch_flag}: a boolean flag that indicates whether to continue to run the process before the UART receives an interrupt. If 1, then it will immediately switch, and if it's 0, then it will continue to run the process.
-  \item \texttt{gp_current_process}: a pointer to the \texttt{PCB} of the currently running process. It is used in \texttt{process_switch()} among other functions that deal with the current process
-  \item \texttt{ReadyPQ}: a linked list of linked lists of \texttt{PCB} structures. It represents a priority queue of process blocks in the ready queue. This is used for scheduling, for example inside the \texttt{scheduler()} function.
-  \item \texttt{BlockPQ}: a linked list of linked lists of \texttt{PCB} structures. It represents a priority queue of process blocks in the blocked queue. This is used for scheduling, for example inside the \texttt{scheduler()} function.
-  \item \texttt{NUM_OF_PRIORITIES}: a constant that represents the number of priorities in the OS (default = 5). 0-3 represent the normal priorities from highest to lowest, whereas 4 is the priority of the null process.
-  \item \texttt{gp_buffer}: a pointer to the next location \texttt{g_buffer}. It is used in \texttt{c_UART0_IRQHandler()}.
-  \item \texttt{g_buffer}: a circular buffer that keeps track of the input and wraps around at a certain size. It is used in \texttt{kcdProc()} and other functions that deal with uart input.
-  \item \texttt{g_buffer_end}: a pointer to the last location in \texttt{g_buffer}. It is helpful for calculations in \texttt{kcdProc()}.
+  \item \texttt{gp_current_process}: a pointer to the \texttt{PCB} of the currently running process. It is used in \texttt{process_switch} among other functions that deal with the current process.
+  \item \texttt{ReadyPQ}: a linked list of queues (the queues are also implemented as linked lists) of \texttt{PCB} structures. It represents a priority queue of process blocks in the ready queue. This is used for scheduling, for example inside the \texttt{scheduler} function.
+  \item \texttt{BlockPQ}: a linked list of queues of \texttt{PCB} structures. It represents a priority queue of process blocks in the blocked queue. This is used when releasing memory to determine which process should be the first to receive memory.  This is used inside the \texttt{k\_release\_memory} function.
+  \item \texttt{NUM_OF_PRIORITIES}: a constant that represents the number of priorities in the OS (default = 5). 0-3 represent the normal priorities from highest to lowest, whereas 4 is reserved for the null process.
+  \item \texttt{g_buffer}: a circular buffer that keeps track of user input and wraps around at a certain size. It is used in \texttt{kcdProc} and other functions that deal with uart input.
+  \item \texttt{gp_buffer}: a pointer to the next location \texttt{g_buffer}. It is used in \texttt{c_UART0_IRQHandler}.
+  \item \texttt{g_buffer_end}: a pointer to the last location in \texttt{g_buffer}. It is helpful for calculations in \texttt{kcdProc}.
   \item \texttt{PROC_STATE_E}: An enum which consists of the states:
     \begin{itemize}
       \item \texttt{NEW}: process was just created
@@ -111,7 +111,7 @@ It is aimed to provide documentation for the operating system, in order to facil
       \item \texttt{BLK}: process is blocked on memory
       \item \texttt{WAIT}: process is waiting to receive a message
     \end{itemize}
-  \item \texttt{MSG_BUF}: It represents a message buffer and is a part of an \texttt{envelope}, with some space in memory blocks reserved for it. It consists of the following fields:
+  \item \texttt{MSG_BUF}: This represents the parts of a message that user processes have access to, as opposed to an \texttt{envelope}, which the users do not have access to. A memory block can be treated as a message by casting it to \texttt{MSG_BUF}.  It consists of the following fields:
     \begin{itemize}
       \item \texttt{mtype}: a user defined message type
       \item \texttt{mtext}: a \texttt{char} array which contains the body of the message
@@ -128,7 +128,7 @@ It is aimed to provide documentation for the operating system, in order to facil
 
 By keeping track of the \texttt{gp_stack} and \texttt{gp_pcbs} pointers and keeping track of how much memory the \texttt{PCB}s use, then it is possible to do some pointer arithmetic to determine the starting and ending addresses of the heap (the physical memory available to allocate in the RTX).
 
-The implementation of memory management in this RTX involves maintaing a linked list that keeps track of all the available \texttt{MemBlock}s on the heap. Upon process consumption of memory, \texttt{MemBlock}s allocated are removed from the linked list and a reference to the block is kept in the process. Upon release, the \texttt{MemBlock} is appended to the linked list again. This has performance implications of $O(1)$ for deletion and insertion of blocks.
+The implementation of memory management in this RTX involves maintaing a linked list that keeps track of all the available \texttt{MemBlock}s on the heap. Upon process consumption of memory, \texttt{MemBlock}s allocated are removed from the linked list and a reference to the block is kept in the process. Upon release, the \texttt{MemBlock} is appended to the linked list again. This means that the runtime is $O(1)$ for deletion and insertion of blocks.
 
  The \texttt{MemBlock}s have a user-defined size called \texttt{BLOCK_SIZE}. The system also reserves some space in the beginning of \texttt{MemBlock}s for \texttt{envelope}s. By default, the \texttt{BLOCK_SIZE} is set to 128 bytes.
 
@@ -147,7 +147,7 @@ int k_request_memory_block(void);
 \end{lstlisting}
 \end{minipage}
 
-This function doesn't take any parameters, and returns the address of an available \texttt{MemBlock}. The algorithm is basically a queue dequeue function. It takes the previous head of \texttt{memQueue}, returns it, then updates the linked list accordingly.
+This function returns the address of an available \texttt{MemBlock}. The algorithm is analogous to the dequeue function of a queue. It takes the previous head of \texttt{memQueue}, returns it, then updates the linked list accordingly.  It also sets the status of a process to \texttt{BLK} and enqueues the process into the blocked queue if there is no more memory for the process to use.
 
 \begin{algorithm}[H]
   \caption{Requesting memory function}
@@ -170,7 +170,7 @@ int k_release_memory_block(void* memory_block);
 \end{lstlisting}
 \end{minipage}
 
-This function takes a \texttt{MemBlock} parameter. This parameter is a reference to the \texttt{MemBlock} that will be freed. It also returns a flag on whether that operation was a success or not - \texttt{RTX_ERR} or \texttt{RTX_OK}. The algorithm is basically a queue enqueue function. After some validation logic, it attached the freed memory block to the end of the linked list. It also moves processes into the ready queue if possible.
+This function takes a \texttt{MemBlock} parameter. This parameter is a reference to the \texttt{MemBlock} that will be freed. It also returns a flag on whether that operation was a success or not - \texttt{RTX_ERR} or \texttt{RTX_OK}. The algorithm is analogous to the enqueue function of a queue. After some validation logic, it attached the freed memory block to the end of the linked list. It also moves processes into the ready queue if a process is currently blocked.
 
 \begin{algorithm}[H]
   \caption{Releasing memory function}
@@ -201,7 +201,7 @@ This function takes a \texttt{MemBlock} parameter. This parameter is a reference
 \section{Processor Management}
 
 \subsection{Releasing The Processor}
-When the processor is released by a process using \texttt{k_release_processor()}, the \texttt{scheduler} is called to determine the next process to run. The \texttt{scheduler} will never choose a blocked process to run next.  The \texttt{scheduler} will choose a process at the highest priority level to run at all times.  The processes at the same priority level will be scheduled in a round robin fashion.
+When the processor is released by a process using \texttt{k_release_processor}, the \texttt{scheduler} is called to determine the next process to run. The \texttt{scheduler} will never choose a blocked process to run next.  The \texttt{scheduler} will choose a process at the highest priority level to run at all times.  The processes at the same priority level will be scheduled in a round robin fashion.
 
 After the next process is chosen, a context switch must be performed to safely switch between processes.  The state of the current process must be saved before beginning to execute the following process.
 
@@ -215,10 +215,10 @@ After the next process is chosen, a context switch must be performed to safely s
   \end{algorithmic}
 \end{algorithm}
 
-The algorithm for \texttt{k\_release\_processor()} is very simple, as the scheduler and the context switching algorithm implement the heavy functionality.
+The algorithm for \texttt{k\_release\_processor} is very simple, as the scheduler and the context switching algorithm implement the heavy functionality.
 
 \subsection{Scheduler}
-The scheduler is implemented using the priority queue \texttt{ReadyPQ}.  The process that is dequeued from a priority queue will always be the process with the highest priority.  Blocked PCBs are never added to the \texttt{ReadyPQ}, so the scheduler will never choose a blocked process to run.  Because the most recently enqueued process is always shifted to the back of \texttt{ReadyPQ}, it will run later than the other processes in \texttt{ReadyPQ}, giving us a round robin scheduling system.  This means that the priority queue aligns with the design mentioned above.
+The scheduler is implemented using the priority queue \texttt{ReadyPQ}.  The process that is dequeued from a priority queue will always be the process with the highest priority.  Blocked \texttt{PCB}s are never added to the \texttt{ReadyPQ}, so the scheduler will never choose a blocked process to run.  Because the most recently enqueued process is always shifted to the back of \texttt{ReadyPQ}, it will run later than the other processes in \texttt{ReadyPQ}, giving us a round robin scheduling system.  This means that the priority queue aligns with the design mentioned above.
 
 \begin{algorithm}[H]
   \caption{Scheduler}
@@ -331,14 +331,14 @@ Every message uses a memory block as its underlying storage component, and has 2
 
 Every memory block created in the operating system has the first \texttt{sizeof(envelope)} bytes reserved, in case that memory block is used as a message. The envelope stores metadata about the message, such as the sender, receiver, the send time, etc. 
 
-Every process' PCB has a ``mailbox'', with a linked list of messages sent to that process that have not yet been read. Thus, the envelope also has a pointer pointing to the next envelope in that linked list.
+Every process' \texttt{PCB} has a ``mailbox'', with a linked list of messages sent to that process that have not yet been read. Thus, the envelope also has a pointer pointing to the next envelope in that linked list.
 
 Then, there is the \texttt{MSG_BUF} struct, which is directly accessible by the user processes. The \texttt{MSG_BUF} contains 2 pieces of data: the type of the message (often \texttt{\#defined} as a constant), and the actual body of the message. The body of the message can take up the rest of the memory block (i.e. BLOCK_SIZE - sizeof(envelope) - sizeof(MSG_BUF.mtype)). 
 
 
 \subsection{Sending Messages}
 
-The send message primitive receives as parameters the intended recipient of the message, and a pointer to the memory block with the actual message. First, a few pieces of metadata is set on the envelope. Then, it merely places that message in the mailbox, located in the PCB of the recipient. Finally, if that message is blocked waiting for a message, it puts that message on the ready queue. Additionally, if that message has higher priority than the current running process, it releases the processor.
+The send message primitive receives as parameters the intended recipient of the message, and a pointer to the memory block with the actual message. First, a few pieces of metadata is set on the envelope. Then, it merely places that message in the mailbox, located in the \texttt{PCB} of the recipient. Finally, if that message is blocked waiting for a message, it puts that message on the ready queue. Additionally, if that message has higher priority than the current running process, it releases the processor.
 
 \begin{algorithm}[H]
 	\caption{Send Message}
@@ -358,7 +358,7 @@ The send message primitive receives as parameters the intended recipient of the 
 	\end{algorithmic}
 \end{algorithm}
 
-In addition to the \texttt{send_message()} function specified above, we needed another version of the function that would not preempt under any circumstances. This was necessary for the case when the UART i-process needed to send a message. I-processes must not preempt under any circumstances.
+In addition to the \texttt{send_message} function specified above, we needed another version of the function that would not preempt under any circumstances. This was necessary for the case when the UART i-process needed to send a message. I-processes must not preempt under any circumstances.
 
 \begin{algorithm}[H]
 	\caption{Send Message (Non-preemptive)}
@@ -376,7 +376,7 @@ In addition to the \texttt{send_message()} function specified above, we needed a
 \end{algorithm}
 
 
-Finally, we created another version of \texttt{send_message()} specific to the timer i-process. The timer i-process must send messages to other processes once the timeout expires. However, the sender of that message is not the timer i-process, but rather the original sender. Thus, this necessitated the creation of a new function. Again, this version is non-preemptive for the same reasons as \texttt{send_message_non_preempt()}.
+Finally, we created another version of \texttt{send_message} specific to the timer i-process. The timer i-process must send messages to other processes once the timeout expires. However, the sender of that message is not the timer i-process, but rather the original sender. Thus, this necessitated the creation of a new function. Again, this version is non-preemptive for the same reasons as \texttt{send_message_non_preempt}.
 
 \begin{algorithm}[H]
 	\caption{Send Message (Timer version)}
@@ -535,12 +535,12 @@ If there is an incoming character, immediately forward it to the KCD (assuming t
 If there are still messages in the transmit buffer, send the next character. If the character is a null character, disable the transmit interrupt as the transmission is finished.
 
 
-Also, there is an \texttt{enable_UART_transmit()} function that sets the appropriate flags to enable the interrupt for outputting characters. This function is called by the CRT to begin outputting characters.
+Also, there is an \texttt{enable_UART_transmit} function that sets the appropriate flags to enable the interrupt for outputting characters. This function is called by the CRT to begin outputting characters.
 
 
 \subsection{Timer I-Process}
 
-The Timer interrupts are enabled to increment the global timer of the OS and to send messages originally sent by \texttt{delayed_send()} at the appropriate times.  The OS handles these interrupts by registering a \texttt{TIMER0_IRQHANDLER} that will be called whenever a timer interrupt occurs.  A timer interrupt will be called every 12500 clock cycles, which takes 1ms to occur.
+The Timer interrupts are enabled to increment the global timer of the OS and to send messages originally sent by \texttt{delayed_send} at the appropriate times.  The OS handles these interrupts by registering a \texttt{TIMER0_IRQHANDLER} that will be called whenever a timer interrupt occurs.  A timer interrupt will be called every 12500 clock cycles, which takes 1ms to occur.
 The timer is initialized by calling the function \texttt{timer\_init}.  This function initializes the timer by setting several flags, including setting the PR field to 12500, which controls how often timer interrupts occur.  This function also initializes other aspects of the timer, including the queue.  Below is the interrupt handling pseudocode.
 
 \begin{algorithm}[H]
@@ -554,7 +554,7 @@ The timer is initialized by calling the function \texttt{timer\_init}.  This fun
 	\end{algorithmic}
 \end{algorithm}
 
-The main function of \texttt{TIMER0_IRQHANDLER} is to save the registers of the previously running process and call the \texttt{c_TIMER0_IRQHANDLER()}, which does the majority of the computations.  Then it restores the registers to jump back to the process that was running before the interrupt was called.
+The main function of \texttt{TIMER0_IRQHANDLER} is to save the registers of the previously running process and call the \texttt{c_TIMER0_IRQHANDLER}, which does the majority of the computations.  Then it restores the registers to jump back to the process that was running before the interrupt was called.
 
 \begin{algorithm}[H]
 	\caption{Timer Interrupt Handler function (C)}
@@ -579,7 +579,7 @@ The main function of \texttt{TIMER0_IRQHANDLER} is to save the registers of the 
 	\end{algorithmic}
 \end{algorithm}
 
-This C code increments the timer count and processes the messages the timer recevies via \texttt{delayed\_send()}.  The messages that need to be sent after a certain time period are stored in the local queue Q, which is sorted by the time that the messages should be sent to their recipients.  This means that the message at the front of the queue is always the message that needs to be sent sooner than the rest.  This algorithm first receives all the messages stored in the timer interrupt's PCB and inserts them into Q.  Then it checks to see which messages need to be sent at the current \texttt{g_timer_count} and sends each of these messages.  This interrupt will only release the processor if there is currently a process in the \texttt{ReadyPQ} with a higher priority than the current running process, allowing the higher priority process to pre-empt the currently running process.
+This C code increments the timer count and processes the messages the timer recevies via \texttt{delayed\_send}.  The messages that need to be sent after a certain time period are stored in the local queue Q, which is sorted by the time that the messages should be sent to their recipients.  This means that the message at the front of the queue is always the message that needs to be sent sooner than the rest.  This algorithm first receives all the messages stored in the timer interrupt's \texttt{PCB} and inserts them into Q.  Then it checks to see which messages need to be sent at the current \texttt{g_timer_count} and sends each of these messages.  This interrupt will only release the processor if there is currently a process in the \texttt{ReadyPQ} with a higher priority than the current running process, allowing the higher priority process to pre-empt the currently running process.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -771,7 +771,7 @@ We initialize the kernel in \texttt{k\_rtx\_init.c}. In the initialization funct
 	\item heap 
 \end{enumerate}
 
-The timers are initialized by setting appropriate configuration parameters such as the freqency. The UART is initialized by enabling UART interrupts and setting configuration parameters. The memory is initialized by allocating space for the each of the PCBs. Then, the fields in PCBs are populated from data in the process table, such as each process's priority, stack size, etc. Then, stack space is allocated in memory based on how much each process requested. Then, all PCBs that require scheduling are placed on the ready queue. Finally, after the PCBs are allocated in the lower memory addresses, and the stacks are allocated in the higher memory addresses, all remaining memory in between is split up into equally sized blocks, to be used as the heap. 
+The timers are initialized by setting appropriate configuration parameters such as the freqency. The UART is initialized by enabling UART interrupts and setting configuration parameters. The memory is initialized by allocating space for the each of the \texttt{PCB}s. Then, the fields in \texttt{PCB}s are populated from data in the process table, such as each process's priority, stack size, etc. Then, stack space is allocated in memory based on how much each process requested. Then, all \texttt{PCB}s that require scheduling are placed on the ready queue. Finally, after the \texttt{PCB}s are allocated in the lower memory addresses, and the stacks are allocated in the higher memory addresses, all remaining memory in between is split up into equally sized blocks, to be used as the heap. 
 
 One possible configuration parameter is the \texttt{BLOCK_SIZE} of the heap memory blocks. By default, it is 128 bytes. However, it can be tuned to smaller and larger values to fit the specific use case of the operating system, in order to reduce internal fragmentation.
 
@@ -785,7 +785,7 @@ After the first phase of testing, we wrote more formal test cases to display the
 
 \subsection{P1}
 
-While testing P1, our informal tests were devoted to testing the memory management, the functions to set/get the priority of processes, and the scheduler.  When testing boundary cases, we attempted to achieve node coverage of our code by testing every every permutation of removing/adding items to our queues.  For example, we tried tests where every process became blocked to ensure that the \texttt{ReadyPQ} would function correctly when removing all PCBs (except the null PCB) from it.
+While testing P1, our informal tests were devoted to testing the memory management, the functions to set/get the priority of processes, and the scheduler.  When testing boundary cases, we attempted to achieve node coverage of our code by testing every every permutation of removing/adding items to our queues.  For example, we tried tests where every process became blocked to ensure that the \texttt{ReadyPQ} would function correctly when removing all \texttt{PCB}s (except the null \texttt{PCB}) from it.
 
 Here are our formal test cases:
 
@@ -832,7 +832,7 @@ One major change that occurred between P1 and P2 was how the memory blocks were 
 
 A major stumbling block was a hardfault we were getting in P1. At that time, we did not understand the difference between the difference between \texttt{k_} prefixed functions and non-\texttt{k_} prefixed functions. It took many hours of debugging to realize that the non-\texttt{k_} prefixed functions invoke the SVC Handler, which changed the processor into kernel mode, allowing us to execute priviledged instructions. When calling the \texttt{k_} prefixed functions from a user process, it immediately hardfaulted since it was trying to execute priviledged instructions.
 
-Another issue we ran into in P2 was a interrupt issue where our kernel primitives were being interrupted by the timer and UART i-processes, causing undefined behaviour. This problem was fixed by calling \texttt{__disable_irq()} and \texttt{__enable_irq()} to disable and re-enable interrupts at the beginning and end of kernel primitives.
+Another issue we ran into in P2 was a interrupt issue where our kernel primitives were being interrupted by the timer and UART i-processes, causing undefined behaviour. This problem was fixed by calling \texttt{__disable_irq} and \texttt{__enable_irq} to disable and re-enable interrupts at the beginning and end of kernel primitives.
 
 
 If we were to start this project again, we would like to further improve the modularity of the code by furthering breaking it up into different files. Additionally, our naming conventions are quite inconsistent, and we would like to improve that as well. This would make our code much cleaner and more elegant. 
