@@ -200,14 +200,76 @@ This function takes a \texttt{MemBlock} parameter. This parameter is a reference
 
 \section{Processor Management}
 
-\subsection{Process Control Structures}
-awefawef
+\subsection{Releasing The Processor}
+When the processor is released by a process using \texttt{k_release_processor()}, the \texttt{scheduler} is called to determine the next process to run. The \texttt{scheduler} will never choose a blocked process to run next.  The \texttt{scheduler} will choose a process at the highest priority level to run at all times.  The processes at the same priority level will be scheduled in a round robin fashion.
 
-\subsection{Process Queues}
-awefawef
+After the next process is chosen, a context switch must be performed to safely switch between processes.  The state of the current process must be saved before beginning to execute the following process.
 
-\subsection{Process Scheduling}
-sdfasdfasdfdasf
+\begin{algorithm}[H]
+  \caption{Releasing processor function}
+  \begin{algorithmic}[1]
+    \Procedure{release\_processor}{}
+	  \State {new\_process = scheduler()}
+      \State {context switch from the old process to the new process}
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+The algorithm for \texttt{k\_release\_processor()} is very simple, as the scheduler and the context switching algorithm implement the heavy functionality.
+
+\subsection{Scheduler}
+The scheduler is implemented using the priority queue \texttt{ReadyPQ}.  The process that is dequeued from a priority queue will always be the process with the highest priority.  Blocked PCBs are never added to the \texttt{ReadyPQ}, so the scheduler will never choose a blocked process to run.  Because the most recently enqueued process is always shifted to the back of \texttt{ReadyPQ}, it will run later than the other processes in \texttt{ReadyPQ}, giving us a round robin scheduling system.  This means that the priority queue aligns with the design mentioned above.
+
+\begin{algorithm}[H]
+  \caption{Scheduler}
+  \begin{algorithmic}[1]
+    \Procedure{scheduler}{}
+      \If{a process was previously running}
+		\If{the previous process is blocked}
+			\State {enqueue the previous process into BlockPQ}
+		\EndIf
+		\If{the previous process is ready}
+			\State {enqueue the previous process into ReadyPQ}
+		\EndIf
+      \EndIf
+	  \State{dequeue the next process from ReadyPQ and return it}
+    \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+\subsection{Context Switching}
+The context switch procedure has three main purposes.  It must set the states of the old process and the new process to appropriate values.  It must also save the stack pointer of the old process, and restore the stack pointer of the new process.  Finally, if the new process is in state \texttt{NEW}, it must pop the exception stack frame from the stack for the new process.
+
+\begin{algorithm}[H]
+  \caption{Context Switcher}
+  \begin{algorithmic}[1]
+    \Procedure{process_switch}{}
+      \If{the new process has a state of NEW}
+		\If{the new process is different from the old process}
+			\If{the old process does not have a state of NEW}
+				\If{the old process is not blocked}
+					\State{set the old process' state to RDY}
+				\EndIf
+				\State{save the old process' stack pointer}
+			\EndIf
+		\EndIf
+		\State{set the new process' state to RUN}
+		\State{switch to new process' stack}
+		\State{pop exception frame from the stack for the new process}
+	  \EndIf
+	  
+	  \If{the new process is different from the old process}
+		\If{the old process is not blocked}
+			\State{set the old process' state to RDY}
+		\EndIf
+		\State{save the old process' stack pointer}
+	
+		\State{set the new process' state to RUN}
+		\State{switch to new process' stack}
+	  \EndIf
+	\EndProcedure
+  \end{algorithmic}
+\end{algorithm}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -478,7 +540,46 @@ Also, there is an \texttt{enable_UART_transmit()} function that sets the appropr
 
 \subsection{Timer I-Process}
 
-sdfasfdafd
+The Timer interrupts are enabled to increment the global timer of the OS and to send messages originally sent by \texttt{delayed_send()} at the appropriate times.  The OS handles these interrupts by registering a \texttt{TIMER0_IRQHANDLER} that will be called whenever a timer interrupt occurs.  A timer interrupt will be called every 12500 clock cycles, which takes 1ms to occur.
+The timer is initialized by calling the function \texttt{timer\_init}.  This function initializes the timer by setting several flags, including setting the PR field to 12500, which controls how often timer interrupts occur.  This function also initializes other aspects of the timer, including the queue.  Below is the interrupt handling pseudocode.
+
+\begin{algorithm}[H]
+	\caption{Timer Interrupt Handler function (assembly)}
+	\begin{algorithmic}[1]
+	  \Function{TIMER0_IRQHandler}{}
+	    \State push registers onto stack
+	    \State call c_TIMER0\_IRQHandler
+	    \State pop registers off stack
+	  \EndFunction
+	\end{algorithmic}
+\end{algorithm}
+
+The main function of \texttt{TIMER0_IRQHANDLER} is to save the registers of the previously running process and call the \texttt{c_TIMER0_IRQHANDLER()}, which does the majority of the computations.  Then it restores the registers to jump back to the process that was running before the interrupt was called.
+
+\begin{algorithm}[H]
+	\caption{Timer Interrupt Handler function (C)}
+	\begin{algorithmic}[1]
+	  \Function{c_TIMER0_IRQHANDLER}{}
+	    \State increment global timer count
+	    \While{loop forever}
+			\State {receive message (non-blocking)}
+			\If {there are no more messages}
+				\State {break from loop}
+			\EndIf
+			\State {insert message into Q, sorted by start time}
+		\EndWhile
+		\While{there are message(s) in Q that have expired}
+			\State {dequeue message from Q}
+			\State {send the message to its recipient}
+		\EndWhile
+		\If {there exists a higher priority ready process}
+			\State {release the processor}
+		\EndIf
+	  \EndFunction
+	\end{algorithmic}
+\end{algorithm}
+
+This C code increments the timer count and processes the messages the timer recevies via \texttt{delayed\_send()}.  The messages that need to be sent after a certain time period are stored in the local queue Q, which is sorted by the time that the messages should be sent to their recipients.  This means that the message at the front of the queue is always the message that needs to be sent sooner than the rest.  This algorithm first receives all the messages stored in the timer interrupt's PCB and inserts them into Q.  Then it checks to see which messages need to be sent at the current \texttt{g_timer_count} and sends each of these messages.  This interrupt will only release the processor if there is currently a process in the \texttt{ReadyPQ} with a higher priority than the current running process, allowing the higher priority process to pre-empt the currently running process.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -663,7 +764,52 @@ dasfasfasfd
 
 \section{Testing}
 
-dfadsfasdf
+For P1 and P2, there were two phases to our testing procedure.  At first, the group wrote many lightweight processes to test a large variety of boundary cases.  Often one test was run at a time to minimize conflicts between tests and make debugging easier.  By doing this we could catch the vast majority of bugs quickly and evaluate our OS in a controlled environment.
+
+After the first phase of testing, we wrote more formal test cases to display the functionality of our OS for the demo.  During our formal testing we dedicated \texttt{proc1} to displaying the output before our tests and the final results. Each individual test had one or more processes dedicated to running and verifying the results of the test.  While an individual test is being run, every process that isn't dedicated to running the test simply releases the processor.  Again, this minimizes the possibility that our tests will conflict and cause unexpected results.
+
+\subsection{P1}
+
+While testing P1, our informal tests were devoted to testing the memory management, the functions to set/get the priority of processes, and the scheduler.  When testing boundary cases, we attempted to achieve node coverage of our code by testing every every permutation of removing/adding items to our queues.  For example, we tried tests where every process became blocked to ensure that the \texttt{ReadyPQ} would function correctly when removing all PCBs (except the null PCB) from it.
+
+Here are our formal test cases:
+
+\begin{itemize}
+	\item \texttt{1}: A test to check if \texttt{get_process_priority} and \texttt{set_process_priority} function correctly.  The process dedicated to this test:
+    	\begin{itemize}
+			\item Runs \texttt{get_process_priority} on itself
+            \item Sets its own priority to a different value using \texttt{set_process_priority}, then runs \texttt{get_process_priority} on itself again
+            \item Runs \texttt{get_process_priority} on a different process
+            \item Sets the priority of another process to a different value using \texttt{set_process_priority}, then runs \texttt{get_process_priority} on that process.
+		\end{itemize}
+    	If \texttt{get_process_priority} returns the correct priority level all four times, the test passes.  Otherwise it fails.
+	\item \texttt{2}: A test to check if the scheduler functions correctly with regard to differing priority levels (ie. it will not run a process if another process has a higher priority level).  The process dedicated to this test first sets its own priority higher than the priority of every other process.  Then it releases the processor.  Since it is the highest priority process, the process should be scheduled to run again, and no other processes should run.  If any other processes run during this time, the test fails.  Otherwise the test passes.
+	\item \texttt{3}: A test to determine whether memory allocation functions correctly.  The process dedicated to this test first requests several memory blocks.  It then writes data to these memory blocks.  Finally, the process reads the data back from the memory blocks.  If the data is correct, the test passes.  Otherwise the test fails.
+	\item \texttt{4}: A test to determine if the OS behaves correctly when all memory is used up.  The first process dedicated to this test requests one block of memory.  Then the second process runs, requesting memory blocks until the system runs out of memory and the process becomes blocked on memory.  After that, the first process runs again and releases its block of memory.  If everything functions correctly, the test passes.
+\end{itemize}
+
+\subsection{P2}
+
+For P2, our informal testing mainly focused on the message passing algorithms, the wall clock, and command registration.  The majority of our informal tests were centered around how the wall clock and command registration would interact with the rest of our OS design.  Normally we would run the wall clock while running our tests to ensure that they did not interfere with the wall clock's operation.  We also tested our functions from P1 to ensure that they still functioned correctly in an environment with interrupts enabled.
+
+Here are our formal test cases:
+
+\begin{itemize}
+	\item \texttt{1}: A test to evaluate \texttt{send_message} and \texttt{receive_message}.  The first process dedicated to this test sends the message \texttt{"hi"} using \texttt{send_message} to the second process.  The second process receives the message using \texttt{receive_message}, and verifies that the sender is the first process.  It also verifies that the message is correct.  Afterwards, the second process sends the message \texttt{"bye"} back to the first process, which verifies the message in the same way.  If both messages are correct, the test passes.  Otherwise the test fails.
+    \item \texttt{2}: A test to verify that \texttt{delayed_send} is functioning correctly.  The process dedicated to this test sends four messages to itself with varying delays, in the following order:
+    \begin{itemize}
+		\item The message \texttt{"200"} with a delay of 200ms
+        \item The message \texttt{"100"} with a delay of 100ms
+        \item The message \texttt{"50"} with a delay of 50ms
+        \item The message \texttt{"201"} with a delay of 201ms
+	\end{itemize}
+    The process then receives all four messages.  It confirms that each message was received in the proper order.  If the messages are correct, the test passes, otherwise it fails.
+    \item \texttt{3}: A test of the command registration.  The process dedicated to this test first registers itself by sending the command \texttt{"\%A"} to the KCD.  Then it sends the message \texttt{"\%A ABCD"} to the KCD, which should eventually be sent back to the process itself by the KCD.  Finally, it receives the message and checks its validity.  If the correct message is received, the test passes, otherwise it fails.
+\end{itemize}
+
+\subsection{P3}
+
+The formal test cases for P3 were processes A, B and C as outlined in the lab manual.  We tested many different combinations of priority levels for these three processes.  On some priority levels (such as HIGH, MEDIUM, LOW for A, B and C respectively), there was a deadlock during the OS' operation, due to process C being unable to request a memory block to allow itself to hibernate.  We concluded that while our OS' design is not capable of preventing this type of deadlock, this is not outside the standard operation for our OS.
 
 \section{Major Design Changes}
 
@@ -689,5 +835,17 @@ The team members did not enforce a strict task allocation process for deciding e
 Upon the initial lab introduction, all four of the members would be present, in order to discuss the material and areas of interest. Then, the members would split into two pairs to work on the parts they chose respectively, using pair programming concepts, and communication both online and offline. If one pair is finished earlier than the other, then they would usually group up with the remaining pair to work through the problem. Otherwise, they would colloratively merge the parts they've worked on into a final workiing product before the deadline.
 
 \chapter{Timing Analysis}
+
+In order to time various functions of our OS, we implemented a second timer.  The original timer for our OS, used to implement the \texttt{delayed_send} function, triggers an interrupt every 12500 clock cycles, which is equivalent to 1ms.  However, the functions \texttt{request_memory_block}, \texttt{send_message} and \texttt{receive_message} all perform their function in far less than 1ms, so this timer is useless for timing them.
+
+In response to this, we implemented a timer that interrupts once every 13 clock cycles.  The formula for calculating the period of time between interrupts was found in the timer.c file.  It is $2*(\textnormal{\# clock cycles per interrupt})*(\frac{1}{25}) * 10^{-6} s = \textnormal{period between interrupts}$.  Using this formula, we calculated the period between interrupts for our new timer to be 1.04 microseconds.
+
+With this timer we could time our functions meaningfully.  For each kernel function that we wanted to test, we wrote a process that checks the time on this timer and runs the kernel function we wanted to test 70 times consecutively.  After the test has been run, we record the new time on the timer and compare to the previous value to determine how long the operation of the kernel functions took.  The differences in timing due to the incrementing of our timers and from the processing of the while loop surrounding our functions calls was deemed to be negligible and thus they are not analyzed.
+
+In the time it took for \texttt{request_memory_block} to be called 70 times, there were 136 interrupts from our timer.  At 1.04 microseconds per interrupt, this takes 141.44 microseconds total for all 70 function calls.  This means that a single functions call required approximately 2.02 microseconds.
+
+Similarly, in the time it took for \texttt{send_message} to be called 70 times, there were 82 interrupts from our timer.  This translates to 1.22 microseconds per function call.
+
+Finally, we determined that 116 interrupts occurred while \texttt{receive_message} was called 70 times.  This means that each function call required 1.72 microseconds.  Note that 70 messages were sent to our process before we began testing, so no time was spent in a WAIT state.
 
 \end{document}
