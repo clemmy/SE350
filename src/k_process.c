@@ -209,32 +209,32 @@ void process_init()
   g_proc_table[PID_C].mpf_start_pc = &procC;
 	
 	g_proc_table[PID_SET_PRIO].m_pid = PID_SET_PRIO;
-  g_proc_table[PID_SET_PRIO].m_priority = HIGH;
+  g_proc_table[PID_SET_PRIO].m_priority = LOW;
   g_proc_table[PID_SET_PRIO].m_stack_size = 0x100;
   g_proc_table[PID_SET_PRIO].mpf_start_pc = &setPriorityProc;
 	
 	g_proc_table[PID_CLOCK].m_pid = PID_CLOCK;
-  g_proc_table[PID_CLOCK].m_priority = HIGH;
+  g_proc_table[PID_CLOCK].m_priority = LOW;
   g_proc_table[PID_CLOCK].m_stack_size = 0x200;
   g_proc_table[PID_CLOCK].mpf_start_pc = &wallClockProc;
 	
 	g_proc_table[PID_KCD].m_pid = PID_KCD;
-  g_proc_table[PID_KCD].m_priority = HIGH;
+  g_proc_table[PID_KCD].m_priority = LOW;
   g_proc_table[PID_KCD].m_stack_size = 0x200;
   g_proc_table[PID_KCD].mpf_start_pc = &kcdProc;
 	
 	g_proc_table[PID_CRT].m_pid = PID_CRT;
-  g_proc_table[PID_CRT].m_priority = HIGH;
+  g_proc_table[PID_CRT].m_priority = LOW;
   g_proc_table[PID_CRT].m_stack_size = 0x200;
   g_proc_table[PID_CRT].mpf_start_pc = &crtProc;
 	
 	g_proc_table[PID_TIMER_IPROC].m_pid = PID_TIMER_IPROC;
-  g_proc_table[PID_TIMER_IPROC].m_priority = HIGH;
+  g_proc_table[PID_TIMER_IPROC].m_priority = LOW;
   g_proc_table[PID_TIMER_IPROC].m_stack_size = 0x200;
   g_proc_table[PID_TIMER_IPROC].mpf_start_pc = &TIMER0_IRQHandler;
 	
 	g_proc_table[PID_UART_IPROC].m_pid = PID_UART_IPROC;
-  g_proc_table[PID_UART_IPROC].m_priority = HIGH;
+  g_proc_table[PID_UART_IPROC].m_priority = LOW;
   g_proc_table[PID_UART_IPROC].m_stack_size = 0x200;
   g_proc_table[PID_UART_IPROC].mpf_start_pc = &UART0_IRQHandler;
 

@@ -14,6 +14,8 @@
 #include "printf.h"
 #endif /* DEBUG_0 */
 
+extern int g_timer2_count;
+
 /* initialization table item */
 PROC_INIT g_test_procs[NUM_TEST_PROCS];
 
@@ -27,9 +29,11 @@ void set_test_procs() {
 	int i;
 	for( i = 0; i < NUM_TEST_PROCS; i++ ) {
 		g_test_procs[i].m_pid=(U32)(i+1);
-		g_test_procs[i].m_priority=MEDIUM;
+		g_test_procs[i].m_priority=LOW;
 		g_test_procs[i].m_stack_size=0x100;
 	}
+	
+	g_test_procs[0].m_priority=HIGH;
   
 	g_test_procs[0].mpf_start_pc = &proc1;
 	g_test_procs[1].mpf_start_pc = &proc2;
@@ -62,7 +66,7 @@ void printTestStatus(int testNumber, int pass){
  * @brief: a process that prints results and yields the CPU if not done
  *         
  */
-void proc1(void){
+/*void proc1(void){
 	
 	uart1_put_string("G030_test: START\n\r");
 	
@@ -89,9 +93,84 @@ void proc1(void){
 	
 	uart1_put_string("G030_test: END\n\r");
 	while (1);
-}
+}*/
+	
+/*void proc1(void){ //Times Memory Requests
+	void* p;
+	int start_time;
+	int difference;
+	int average = 0;
+	
+	
+	start_time = g_timer2_count;
+	for (int i = 0; i < 70; i++){
+		p = (void*) request_memory_block();
+	}
+	
+	difference = g_timer2_count - start_time;
+	int temp = difference;
+	
+	uart1_put_char(difference);
+	
+	while (1);
+}*/
+
+/*void proc1(void){ //Times message sending
+	MSG_BUF* p[70];
+	int start_time;
+	int difference;
+	int average = 0;
+	
+	for (int i = 0; i < 70; i++){
+		p[i] = (MSG_BUF*) request_memory_block();
+	}
+	
+	start_time = g_timer2_count;
+	for (int i = 0; i < 70; i++){
+		send_message(PID_P2, p[i]);
+	}
+	difference = g_timer2_count - start_time;
+	
+	int temp = difference;
+	
+	uart1_put_char(difference);
+	
+	while (1);
+}*/
+
+/*void proc1(void){ //Times message receiving
+	MSG_BUF* p[70];
+	int start_time;
+	int difference;
+	int sender;
+	
+	for (int i = 0; i < 70; i++){
+		p[i] = (MSG_BUF*) request_memory_block();
+	}
+	
+	
+	for (int i = 0; i < 70; i++){
+		send_message(PID_P1, p[i]);
+	}
+	
+	start_time = g_timer2_count;
+	for (int i = 0; i < 70; i++){
+		receive_message(&sender);
+	}
+	difference = g_timer2_count - start_time;
+	
+	int temp = difference;
+	
+	uart1_put_char(difference);
+	
+	while (1);
+}*/
 
 void proc2(void) {
+	
+	while (1){
+		release_processor();
+	}
 	
 	while (!ready){
 		release_processor();
@@ -120,7 +199,12 @@ void proc2(void) {
 		release_processor();
 	}
 }
+
 void proc3(void) {
+	
+	while (1){
+		release_processor();
+	}
 	
 	while (!ready){
 		release_processor();
@@ -151,6 +235,11 @@ void proc3(void) {
 }
 
 void proc4(void) {
+	
+	while (1){
+		release_processor();
+	}
+	
 	while (testsRan < 1 || !ready){
 		release_processor();
 	}
@@ -221,6 +310,11 @@ void proc4(void) {
 }
 
 void proc5(void) {
+	
+	while (1){
+		release_processor();
+	}
+	
 	while (testsRan < 2 || !ready){
 		release_processor();
 	}
